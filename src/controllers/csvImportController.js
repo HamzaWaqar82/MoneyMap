@@ -5,6 +5,8 @@ const Category = require("../models/Category");
 const { parseCSV, getSupportedBanks } = require("../services/csvParser.service");
 const { categorizeAll } = require("../services/categorization.service");
 const { rebuildMonthFull } = require("../services/monthlySummary.service");
+const { syncBudgets } = require("../services/budgetSync.service");
+const { checkAndNotify } = require("../services/notificationTrigger.service");
 const {
 	validateCsvImport,
 	validateConfirmImport,
@@ -246,6 +248,22 @@ const confirmImport = async (req, res, next) => {
 			}
 		}
 
+		// Sync budgets for affected months (pull-based reconciliation)
+		let budgetUpdates = [];
+		try {
+			budgetUpdates = await syncBudgets(userId, Array.from(monthsToRebuild));
+		} catch (syncError) {
+			console.error("[CSV_IMPORT] Budget sync failed:", syncError.message);
+		}
+
+		// Fire notification alerts for budget threshold crossings
+		let notifications = [];
+		try {
+			notifications = await checkAndNotify(userId, budgetUpdates);
+		} catch (notifError) {
+			console.error("[CSV_IMPORT] Notification trigger failed:", notifError.message);
+		}
+
 		sendSuccess(
 			res,
 			{
@@ -253,6 +271,8 @@ const confirmImport = async (req, res, next) => {
 				failed: failedTransactions.length,
 				failures: failedTransactions,
 				monthsUpdated: Array.from(monthsToRebuild),
+				budgetsAffected: budgetUpdates.length,
+				notificationsSent: notifications.length,
 			},
 			`${savedTransactions.length} transactions imported successfully${failedTransactions.length > 0 ? `, ${failedTransactions.length} failed` : ""}`,
 			201,

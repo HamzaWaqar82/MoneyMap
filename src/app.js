@@ -131,8 +131,10 @@ app.use(errorHandler);
 
 const PORT = config.port;
 
-app.listen(PORT, () => {
-	console.log(`
+// Only bind the port when running directly (not when imported by tests)
+if (require.main === module) {
+	app.listen(PORT, () => {
+		console.log(`
 ╔═══════════════════════════════════════════════════╗
 ║   💰 Finance Dashboard API Running 💰            ║
 ╠═══════════════════════════════════════════════════╣
@@ -140,7 +142,8 @@ app.listen(PORT, () => {
 ║ Environment: ${config.nodeEnv}                     ║
 ║ Database: ${config.mongoUri}               ║
 ╚═══════════════════════════════════════════════════╝
-  `);
-});
+    `);
+	});
+}
 
 module.exports = app;

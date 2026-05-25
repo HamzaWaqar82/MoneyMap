@@ -479,3 +479,94 @@ tr:hover td { background: rgba(148,163,184,0.04); }
 .confirm-body { text-align: center; padding: 16px 0; }
 .confirm-body p { color: var(--text-secondary); margin-bottom: 8px; }
 .confirm-body .warning-text { color: var(--danger); font-size: 13px; }
+
+/* ========== ACCOUNTS ========== */
+.accounts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.account-card { position: relative; transition: var(--transition); }
+.account-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.account-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.account-icon-wrap {
+  width: 44px; height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--accent-glow);
+  color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+}
+.account-name { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+.account-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.account-number { font-size: 13px; color: var(--text-muted); font-family: 'Courier New', monospace; letter-spacing: 1px; margin-bottom: 8px; }
+.account-footer { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); padding-top: 12px; border-top: 1px solid var(--border); }
+
+/* ========== UPLOAD ZONE ========== */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.upload-zone:hover, .upload-zone.active {
+  border-color: var(--accent);
+  background: rgba(16, 185, 129, 0.04);
+}
+.upload-zone.has-file { border-color: var(--accent); border-style: solid; }
+.upload-file-info {
+  display: flex; align-items: center; gap: 16px;
+  text-align: left; justify-content: center;
+}
+
+/* ========== STEP INDICATOR ========== */
+.step-indicator {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; margin-bottom: 32px; padding: 16px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.step-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; color: var(--text-muted);
+  padding: 6px 16px; border-radius: 20px;
+  transition: var(--transition);
+}
+.step-item.active { color: var(--accent); background: var(--accent-glow); font-weight: 600; }
+.step-item.done { color: var(--success); }
+.step-dot {
+  width: 24px; height: 24px;
+  border-radius: 50%; border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600;
+  transition: var(--transition);
+}
+.step-item.active .step-dot { border-color: var(--accent); background: var(--accent); color: white; }
+.step-item.done .step-dot { border-color: var(--success); background: var(--success); color: white; }
+.step-item + .step-item::before {
+  content: ''; width: 32px; height: 2px;
+  background: var(--border); margin-right: 8px;
+}
+
+/* ========== CONFIDENCE BADGES ========== */
+.confidence-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+}
+.confidence-badge.high { background: rgba(16,185,129,0.15); color: var(--success); }
+.confidence-badge.med { background: rgba(245,158,11,0.15); color: var(--warning); }
+.confidence-badge.low { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+/* ========== CATEGORY BREAKDOWN ========== */
+.category-breakdown-list { display: flex; flex-direction: column; gap: 14px; }
+.category-row { display: flex; align-items: center; gap: 12px; }
+.category-row-info { display: flex; align-items: center; gap: 8px; min-width: 140px; }
+.category-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.category-row-name { font-size: 14px; font-weight: 500; }
+.category-row-bar { display: flex; align-items: center; gap: 12px; flex: 1; }
+.category-row-amount { font-size: 13px; font-weight: 600; min-width: 100px; text-align: right; }
+.category-row-pct { font-size: 12px; color: var(--text-muted); min-width: 36px; text-align: right; }
+
+/* ========== BADGE TYPE EXTENSIONS ========== */
+.badge-type.bank { background: rgba(59,130,246,0.15); color: var(--info); }
+.badge-type.wallet { background: rgba(168,85,247,0.15); color: #A855F7; }
+.badge-type.card { background: rgba(245,158,11,0.15); color: var(--warning); }
+.badge-type.cash { background: rgba(16,185,129,0.15); color: var(--success); }

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import {
   LayoutDashboard, ArrowLeftRight, Wallet, Target, BarChart3,
-  Bell, User, LogOut, Menu, X
+  Bell, User, LogOut, Menu, X, Building2, Upload, PieChart
 } from 'lucide-react';
 
 const navItems = [
@@ -13,6 +13,9 @@ const navItems = [
   { path: '/budgets', label: 'Budgets', icon: Wallet },
   { path: '/goals', label: 'Goals', icon: Target },
   { path: '/reports', label: 'Reports', icon: BarChart3 },
+  { path: '/accounts', label: 'Accounts', icon: Building2 },
+  { path: '/import', label: 'Import CSV', icon: Upload },
+  { path: '/expense-tracker', label: 'Expense Tracker', icon: PieChart },
   { path: '/notifications', label: 'Notifications', icon: Bell },
 ];
 
@@ -22,6 +25,9 @@ const pageTitles = {
   '/budgets': { title: 'Budgets', sub: 'Track your monthly budgets' },
   '/goals': { title: 'Savings Goals', sub: 'Track progress toward your goals' },
   '/reports': { title: 'Reports', sub: 'Financial analytics & insights' },
+  '/accounts': { title: 'Accounts', sub: 'Manage your bank accounts & wallets' },
+  '/import': { title: 'Import CSV', sub: 'Upload bank statements for auto-categorization' },
+  '/expense-tracker': { title: 'Expense Tracker', sub: 'Monthly summaries & category breakdown' },
   '/notifications': { title: 'Notifications', sub: 'Stay updated on your finances' },
   '/profile': { title: 'Profile', sub: 'Manage your account settings' },
 };
