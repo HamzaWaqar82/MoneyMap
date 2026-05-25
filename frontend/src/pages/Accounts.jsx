@@ -4,7 +4,12 @@ import Modal from '../components/Modal';
 import { Plus, Trash2, Building2, Wallet, CreditCard, Banknote, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const PROVIDERS = ['HBL','Meezan Bank','UBL','MCB','Allied Bank','Bank Alfalah','Faysal Bank','Standard Chartered','JazzCash','Easypaisa','SadaPay','NayaPay','Zindigi','Other'];
+const PROVIDERS_BY_TYPE = {
+  bank: ['HBL','Meezan Bank','UBL','MCB','Allied Bank','Askari Bank','Bank Alfalah','Faysal Bank','Standard Chartered'],
+  wallet: ['JazzCash','Easypaisa','SadaPay','NayaPay','Zindigi'],
+  card: ['Visa', 'Mastercard', 'UnionPay', 'PayPak'],
+  cash: ['Cash']
+};
 const TYPES = ['bank','wallet','card','cash'];
 const TYPE_ICONS = { bank: Building2, wallet: Wallet, card: CreditCard, cash: Banknote };
 
@@ -27,6 +32,11 @@ export default function Accounts() {
   };
 
   useEffect(() => { fetchAccounts(); }, []);
+
+  const handleTypeChange = (e) => {
+    const newType = e.target.value;
+    setForm({ ...form, type: newType, provider: '' }); // Reset provider when type changes
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setSaving(true); setErrors({});
@@ -52,6 +62,8 @@ export default function Accounts() {
   };
 
   if (loading) return <div className="loading-page"><div className="spinner"></div></div>;
+
+  const currentProviders = [...(PROVIDERS_BY_TYPE[form.type] || []), 'Other'];
 
   return (
     <div className="fade-in">
@@ -116,7 +128,7 @@ export default function Accounts() {
           </div>
           <div className="form-group">
             <label>Type</label>
-            <select className="form-control" value={form.type} onChange={e => setForm({...form, type:e.target.value})}>
+            <select className="form-control" value={form.type} onChange={handleTypeChange}>
               {TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1)}</option>)}
             </select>
           </div>
@@ -124,7 +136,7 @@ export default function Accounts() {
             <label>Provider / Bank</label>
             <select className={`form-control ${errors.provider?'error':''}`} value={form.provider} onChange={e => setForm({...form, provider:e.target.value})} required>
               <option value="">Select provider</option>
-              {PROVIDERS.map(p => <option key={p} value={p}>{p}</option>)}
+              {currentProviders.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
             {errors.provider && <div className="form-error">{errors.provider}</div>}
           </div>

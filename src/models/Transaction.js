@@ -57,7 +57,7 @@ const transactionSchema = new mongoose.Schema(
 		},
 		paymentMethod: {
 			type: String,
-			enum: ["cash", "card", "bank_transfer"],
+			enum: ["cash", "card", "bank_transfer", "wallet"],
 			default: "cash",
 		},
 		// ── Expense Tracker Module Extensions ──

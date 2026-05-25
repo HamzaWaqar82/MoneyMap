@@ -13,8 +13,6 @@ import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
 import Accounts from './pages/Accounts';
-import ImportCSV from './pages/ImportCSV';
-import ExpenseTracker from './pages/ExpenseTracker';
 
 function App() {
   return (
@@ -36,8 +34,6 @@ function App() {
           <Route path="/notifications" element={<ProtectedRoute><Layout><Notifications /></Layout></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
           <Route path="/accounts" element={<ProtectedRoute><Layout><Accounts /></Layout></ProtectedRoute>} />
-          <Route path="/import" element={<ProtectedRoute><Layout><ImportCSV /></Layout></ProtectedRoute>} />
-          <Route path="/expense-tracker" element={<ProtectedRoute><Layout><ExpenseTracker /></Layout></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>

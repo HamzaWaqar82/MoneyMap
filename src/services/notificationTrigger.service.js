@@ -1,4 +1,6 @@
 const Notification = require("../models/Notification");
+const User = require("../models/User");
+const { dispatchNotification } = require("./pushNotification.service");
 
 /**
  * Notification Trigger Service
@@ -45,12 +47,11 @@ const checkAndNotify = async (userId, updatedBudgets) => {
 			});
 
 			if (!existing) {
-				const notif = await Notification.create({
-					userId,
-					type: "budget_alert",
-					message,
-				});
-				created.push(notif);
+				const user = await User.findById(userId);
+				if (user) {
+					const notif = await dispatchNotification(user, "budget_alert", message, "high");
+					created.push(notif);
+				}
 			}
 		}
 
@@ -67,12 +68,11 @@ const checkAndNotify = async (userId, updatedBudgets) => {
 			});
 
 			if (!existing) {
-				const notif = await Notification.create({
-					userId,
-					type: "budget_alert",
-					message,
-				});
-				created.push(notif);
+				const user = await User.findById(userId);
+				if (user) {
+					const notif = await dispatchNotification(user, "budget_alert", message, "warning");
+					created.push(notif);
+				}
 			}
 		}
 	}

@@ -35,31 +35,40 @@ const pageTitles = {
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const pageInfo = pageTitles[location.pathname] || { title: 'MoneyMap', sub: '' };
 
   useEffect(() => {
-    api.get('/notifications/unread').then(r => setUnreadCount(r.data.unreadCount)).catch(() => {});
+    setIsMobileOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    api.get('/notifications/unread').then(res => {
+      setUnreadCount(res.data.unreadCount || 0);
+    }).catch(() => {});
+  }, [location.pathname]);
+
+  const currentRouteInfo = pageTitles[location.pathname] || { title: 'MoneyMap', sub: 'Welcome back' };
   const initials = user?.fullName?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
 
   return (
-    <div className="app-layout">
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+    <div className={`app-layout ${isCollapsed ? 'sidebar-collapsed' : ''}`}>
+      {isMobileOpen && <div className="sidebar-overlay" onClick={() => setIsMobileOpen(false)} />}
+
+      <aside className={`sidebar ${isMobileOpen ? 'open' : ''} ${isCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-logo">
           <div className="logo-icon">M</div>
-          <h1>MoneyMap</h1>
+          {!isCollapsed && <h1>MoneyMap</h1>}
         </div>
         <nav className="sidebar-nav">
           {navItems.map(item => (
             <NavLink key={item.path} to={item.path}
               className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-              onClick={() => setSidebarOpen(false)}>
+              onClick={() => setIsMobileOpen(false)}>
               <item.icon size={20} />
-              <span>{item.label}</span>
-              {item.label === 'Notifications' && unreadCount > 0 && (
+              {!isCollapsed && <span>{item.label}</span>}
+              {!isCollapsed && item.label === 'Notifications' && unreadCount > 0 && (
                 <span className="badge">{unreadCount}</span>
               )}
             </NavLink>
@@ -67,31 +76,41 @@ export default function Layout({ children }) {
         </nav>
         <div className="sidebar-footer">
           <NavLink to="/profile" className={({ isActive }) => `user-info ${isActive ? 'active' : ''}`}
-            onClick={() => setSidebarOpen(false)}>
+            onClick={() => setIsMobileOpen(false)}>
             <div className="user-avatar">{initials}</div>
-            <div>
-              <div className="user-name">{user?.fullName}</div>
-              <div className="user-email">{user?.email}</div>
-            </div>
+            {!isCollapsed && (
+              <div>
+                <div className="user-name">{user?.fullName}</div>
+                <div className="user-email">{user?.email}</div>
+              </div>
+            )}
           </NavLink>
-          <button className="sidebar-link" onClick={logout} style={{ marginTop: 8, width: '100%' }}>
-            <LogOut size={20} /><span>Logout</span>
+          <button className="sidebar-link" onClick={logout} style={{ marginTop: 8, width: '100%', justifyContent: isCollapsed ? 'center' : 'flex-start' }}>
+            <LogOut size={20} />
+            {!isCollapsed && <span>Logout</span>}
           </button>
         </div>
       </aside>
-      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
-      <div className="topbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button className="menu-toggle btn btn-ghost" onClick={() => setSidebarOpen(!sidebarOpen)}>
-            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-          <div className="topbar-title">
-            <h2>{pageInfo.title}</h2>
-            <p>{pageInfo.sub}</p>
+
+      <div className="main-wrapper">
+        <div className="topbar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {/* Mobile Toggle */}
+            <button className="menu-toggle mobile-only btn btn-ghost" onClick={() => setIsMobileOpen(true)}>
+              <Menu size={20} />
+            </button>
+            {/* Desktop Toggle */}
+            <button className="menu-toggle desktop-only btn btn-ghost" onClick={() => setIsCollapsed(!isCollapsed)}>
+              {isCollapsed ? <Menu size={20} /> : <X size={20} />}
+            </button>
+            <div className="topbar-title">
+              <h2>{currentRouteInfo.title}</h2>
+              <p>{currentRouteInfo.sub}</p>
+            </div>
           </div>
         </div>
+        <main className="main-content fade-in">{children}</main>
       </div>
-      <main className="main-content fade-in">{children}</main>
     </div>
   );
 }

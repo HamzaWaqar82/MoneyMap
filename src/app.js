@@ -22,6 +22,7 @@ const accountRoutes = require("./routes/accounts.routes");
 const categoryRoutes = require("./routes/categories.routes");
 const expenseTrackerRoutes = require("./routes/expenseTracker.routes");
 const { seedCategories } = require("./seeds/categorySeeder");
+const { startNotificationCron } = require("./services/notificationCron.service");
 
 const app = express();
 
@@ -38,6 +39,10 @@ console.log("[APP] About to call connectDB()...");
 	} catch (seedError) {
 		console.error("[APP] ⚠️ Category seeding failed:", seedError.message);
 	}
+
+	// Start Cron jobs
+	startNotificationCron();
+	console.log("[APP] ✅ Notification Cron Jobs started");
 })().catch(e => console.log("[APP] ❌ DB Promise rejected:", e.message));
 
 // ============================================

@@ -35,6 +35,10 @@ const userSchema = new mongoose.Schema(
 			type: String,
 			enum: ["PKR", "USD", "EUR", "GBP", "AUD"],
 			default: "PKR",
+		},
+		pushSubscription: {
+			type: mongoose.Schema.Types.Mixed,
+			default: null,
 		}
 	},
 	{ timestamps: true },

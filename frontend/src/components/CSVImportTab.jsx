@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 const STEPS = ['Select & Upload', 'Review Transactions', 'Complete'];
 
-export default function ImportCSV() {
+export default function CSVImportTab() {
   const [step, setStep] = useState(0);
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState('');
