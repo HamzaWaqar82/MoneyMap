@@ -4,6 +4,17 @@ const {
 	validateUpdateTransaction,
 } = require("../validators/transactionValidator");
 const { sendSuccess, sendError } = require("../utils/responseFormatter");
+const User = require("../models/User");
+const { syncBudgets } = require("../services/budgetSync.service");
+const { checkAndNotify } = require("../services/notificationTrigger.service");
+const { dispatchNotification } = require("../services/pushNotification.service");
+
+const getMonthKey = (date) => {
+	const d = new Date(date);
+	const year = d.getFullYear();
+	const month = String(d.getMonth() + 1).padStart(2, "0");
+	return `${year}-${month}`;
+};
 
 // Create Transaction
 const createTransaction = async (req, res, next) => {
@@ -16,6 +27,7 @@ const createTransaction = async (req, res, next) => {
 			description,
 			transactionDate,
 			paymentMethod,
+			accountId,
 		} = req.body;
 
 		// Validate input
@@ -26,6 +38,7 @@ const createTransaction = async (req, res, next) => {
 			description,
 			transactionDate,
 			paymentMethod,
+			accountId,
 		});
 
 		if (error) {
@@ -51,9 +64,32 @@ const createTransaction = async (req, res, next) => {
 			description: value.description,
 			transactionDate: value.transactionDate,
 			paymentMethod: value.paymentMethod,
+			accountId: value.accountId || null,
 		});
 
 		await transaction.save();
+
+		// Check for large transaction
+		if (transaction.type === "expense" && transaction.amount >= 50000) {
+			const user = await User.findById(userId);
+			if (user) {
+				await dispatchNotification(
+					user,
+					"transaction_confirmation",
+					`Heads up! A large expense of Rs. ${transaction.amount} was recorded for ${transaction.category}.`,
+					"high"
+				).catch(err => console.error("Dispatch error:", err));
+			}
+		}
+
+		// Sync budgets and trigger alerts
+		try {
+			const month = getMonthKey(transaction.transactionDate);
+			const updatedBudgets = await syncBudgets(userId, [month]);
+			await checkAndNotify(userId, updatedBudgets);
+		} catch (budgetErr) {
+			console.error("Budget sync error:", budgetErr);
+		}
 
 		sendSuccess(
 			res,
@@ -66,6 +102,7 @@ const createTransaction = async (req, res, next) => {
 				description: transaction.description,
 				transactionDate: transaction.transactionDate,
 				paymentMethod: transaction.paymentMethod,
+				accountId: transaction.accountId,
 				createdAt: transaction.createdAt,
 			},
 			"Transaction created successfully",
@@ -225,6 +262,7 @@ const updateTransaction = async (req, res, next) => {
 			description,
 			transactionDate,
 			paymentMethod,
+			accountId,
 		} = req.body;
 
 		// Validate input
@@ -235,6 +273,7 @@ const updateTransaction = async (req, res, next) => {
 			description,
 			transactionDate,
 			paymentMethod,
+			accountId,
 		});
 
 		if (error) {
@@ -266,6 +305,8 @@ const updateTransaction = async (req, res, next) => {
 			);
 		}
 
+		const oldMonth = getMonthKey(transaction.transactionDate);
+
 		// Update fields
 		if (type !== undefined) transaction.type = type;
 		if (amount !== undefined) transaction.amount = amount;
@@ -275,9 +316,23 @@ const updateTransaction = async (req, res, next) => {
 			transaction.transactionDate = transactionDate;
 		if (paymentMethod !== undefined)
 			transaction.paymentMethod = paymentMethod;
+		if (accountId !== undefined)
+			transaction.accountId = accountId;
 
 		transaction.updatedAt = Date.now();
 		await transaction.save();
+
+		// Sync budgets and trigger alerts
+		try {
+			const months = new Set([
+				oldMonth,
+				getMonthKey(transaction.transactionDate),
+			]);
+			const updatedBudgets = await syncBudgets(userId, Array.from(months));
+			await checkAndNotify(userId, updatedBudgets);
+		} catch (budgetErr) {
+			console.error("Budget sync error:", budgetErr);
+		}
 
 		sendSuccess(res, transaction, "Transaction updated successfully", 200);
 	} catch (error) {
