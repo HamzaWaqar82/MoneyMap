@@ -15,7 +15,7 @@ const { sendError } = require("../utils/responseFormatter");
 const rateLimiter = (options = {}) => {
 	const {
 		windowMs = 15 * 60 * 1000, // 15 minutes
-		max = 100,
+		max = process.env.NODE_ENV === 'development' ? 10000 : 100,
 		message = "Too many requests, please try again later",
 	} = options;
 
@@ -34,6 +34,10 @@ const rateLimiter = (options = {}) => {
 	return (req, res, next) => {
 		const ip = req.ip || req.connection.remoteAddress;
 		const now = Date.now();
+
+		// 🔍 DEBUG: Track rate limit state
+		const currentData = requests.get(ip);
+		console.log(`[RATE] IP: ${ip} | Count: ${currentData?.count || 0}/${max} | Path: ${req.originalUrl}`);
 
 		if (!requests.has(ip)) {
 			requests.set(ip, { count: 1, startTime: now });

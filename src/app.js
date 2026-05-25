@@ -20,7 +20,11 @@ const notificationRoutes = require("./routes/notifications.routes");
 const app = express();
 
 // Initialize MongoDB connection
-connectDB();
+console.log("[APP] About to call connectDB()...");
+(async () => {
+	await connectDB();
+	console.log("[APP] ✅ DB connection established");
+})().catch(e => console.log("[APP] ❌ DB Promise rejected:", e.message));
 
 // ============================================
 // GLOBAL MIDDLEWARE
@@ -50,7 +54,7 @@ app.use(logger);
 app.use(
 	rateLimiter({
 		windowMs: 15 * 60 * 1000,
-		max: 100,
+		max: process.env.NODE_ENV === 'development' ? 10000 : 100,
 		message: "Too many requests from this IP, please try again after 15 minutes",
 	}),
 );
