@@ -77,8 +77,18 @@ export default function Transactions() {
       if (!body.accountId) delete body.accountId;
 
       if (modal.mode === 'create') {
-        await api.post('/transactions', body);
+        const res = await api.post('/transactions', body);
         toast.success('Transaction created!');
+        const d = res.data || {};
+        if (d.alertsTriggered > 0) {
+          if (d.pushSent) toast.success('Budget alert sent to your device');
+          else if (!d.hasPushSubscription) {
+            toast('Budget alert saved. Enable push in Profile for browser notifications.', { icon: '🔔', duration: 5000 });
+          } else {
+            toast('Budget alert saved in-app. Push delivery failed — try re-enabling in Profile.', { icon: '⚠️' });
+          }
+          refreshUnread();
+        }
       } else {
         await api.put(`/transactions/${modal.data._id}`, body);
         toast.success('Transaction updated!');

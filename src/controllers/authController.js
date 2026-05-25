@@ -5,7 +5,7 @@ const {
 } = require("../validators/authValidator");
 const { generateToken } = require("../utils/tokenGenerator");
 const { sendSuccess, sendError } = require("../utils/responseFormatter");
-const { AppError } = require("../utils/errorHandler");
+const { restoreAccountIfPending } = require("../services/accountDeletion.service");
 
 // Register Controller
 const register = async (req, res, next) => {
@@ -126,10 +126,18 @@ const login = async (req, res, next) => {
 			);
 		}
 
-		// Generate JWT token
+		const restored = await restoreAccountIfPending(user);
+		if (!restored && user.pendingDeletion) {
+			return sendError(
+				res,
+				"Account has been deleted",
+				"ACCOUNT_DELETED",
+				410,
+			);
+		}
+
 		const token = generateToken(user._id);
 
-		// Prepare response (exclude passwordHash)
 		const userResponse = {
 			id: user._id,
 			fullName: user.fullName,
@@ -138,13 +146,18 @@ const login = async (req, res, next) => {
 			currencyPreference: user.currencyPreference,
 		};
 
+		const message = restored
+			? "Login successful. Your scheduled account deletion has been cancelled."
+			: "Login successful";
+
 		sendSuccess(
 			res,
 			{
 				token,
 				user: userResponse,
+				accountRestored: restored,
 			},
-			"Login successful",
+			message,
 			200,
 		);
 	} catch (error) {

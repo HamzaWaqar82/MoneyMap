@@ -16,6 +16,7 @@ export default function Profile() {
   const [pwSaving, setPwSaving] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
+  const [deletionMode, setDeletionMode] = useState('scheduled');
   const [errors, setErrors] = useState({});
   const { supported, subscribed, loading: pushLoading, enable, disable, checkStatus } = usePushNotifications();
 
@@ -57,10 +58,24 @@ export default function Profile() {
     } finally { setPwSaving(false); }
   };
 
+  const handleTestPush = async () => {
+    try {
+      const res = await api.post('/notifications/push/test', {});
+      if (res.data?.pushSent) toast.success('Test push sent — check your system notifications');
+      else toast.error('Push delivery failed. Try re-enabling notifications in Profile.');
+    } catch (err) { toast.error(err.message); }
+  };
+
   const handleDelete = async () => {
     try {
-      await api.deleteWithBody('/users/account', { password: deletePassword });
-      toast.success('Account deleted'); logout();
+      const res = await api.deleteWithBody('/users/account', { password: deletePassword, deletionMode });
+      if (res.data?.mode === 'scheduled') {
+        toast.success('Account scheduled for deletion in 30 days. Log in before then to restore it.');
+      } else {
+        toast.success('Account and all data permanently deleted');
+      }
+      setDeleteModal(false);
+      logout();
     } catch (err) { toast.error(err.message); }
   };
 
@@ -95,9 +110,21 @@ export default function Profile() {
         {!supported ? (
           <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Push notifications are not supported in this browser.</p>
         ) : (
-          <button type="button" className={`btn ${subscribed ? 'btn-outline' : 'btn-primary'}`} onClick={handlePushToggle} disabled={pushLoading}>
-            {subscribed ? <><BellOff size={16}/> Disable Push Notifications</> : <><Bell size={16}/> Enable Push Notifications</>}
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" className={`btn ${subscribed ? 'btn-outline' : 'btn-primary'}`} onClick={handlePushToggle} disabled={pushLoading}>
+              {subscribed ? <><BellOff size={16}/> Disable Push</> : <><Bell size={16}/> Enable Push Notifications</>}
+            </button>
+            {subscribed && (
+              <button type="button" className="btn btn-outline" onClick={handleTestPush} disabled={pushLoading}>
+                Send Test Alert
+              </button>
+            )}
+          </div>
+        )}
+        {supported && !subscribed && (
+          <p style={{ fontSize: 12, color: 'var(--warning)', marginTop: 12 }}>
+            Budget alerts appear in-app only until you enable push here.
+          </p>
         )}
       </div>
 
@@ -130,10 +157,22 @@ export default function Profile() {
       </div>
 
       <Modal isOpen={deleteModal} onClose={() => setDeleteModal(false)} title="Delete Account"
-        footer={<><button className="btn btn-ghost" onClick={() => setDeleteModal(false)}>Cancel</button><button className="btn btn-danger" onClick={handleDelete} disabled={!deletePassword}>Delete Forever</button></>}>
+        footer={<><button className="btn btn-ghost" onClick={() => setDeleteModal(false)}>Cancel</button><button className="btn btn-danger" onClick={handleDelete} disabled={!deletePassword}>{deletionMode === 'immediate' ? 'Delete Immediately' : 'Schedule Deletion'}</button></>}>
         <div className="confirm-body">
-          <p>This will permanently delete your account and all data.</p>
-          <p className="warning-text" style={{ marginBottom: 16 }}>This cannot be undone!</p>
+          <div className="form-group" style={{ textAlign: 'left', marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 8 }}>Deletion option</label>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 8, cursor: 'pointer', fontSize: 14 }}>
+              <input type="radio" name="deletionMode" value="scheduled" checked={deletionMode === 'scheduled'} onChange={() => setDeletionMode('scheduled')} />
+              <span><strong>Schedule for 30 days</strong> — Your data is kept. Log in within 30 days to cancel deletion and restore your account.</span>
+            </label>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', cursor: 'pointer', fontSize: 14 }}>
+              <input type="radio" name="deletionMode" value="immediate" checked={deletionMode === 'immediate'} onChange={() => setDeletionMode('immediate')} />
+              <span><strong>Delete immediately</strong> — Permanently removes your account, transactions, budgets, goals, and all other data now.</span>
+            </label>
+          </div>
+          {deletionMode === 'immediate' && (
+            <p className="warning-text" style={{ marginBottom: 16 }}>This cannot be undone!</p>
+          )}
           <div className="form-group" style={{ textAlign: 'left' }}>
             <label>Enter your password to confirm</label>
             <input type="password" className="form-control" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} placeholder="Your password" />

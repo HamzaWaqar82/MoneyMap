@@ -39,10 +39,24 @@ const userSchema = new mongoose.Schema(
 		pushSubscription: {
 			type: mongoose.Schema.Types.Mixed,
 			default: null,
-		}
+		},
+		pendingDeletion: {
+			type: Boolean,
+			default: false,
+		},
+		deletionRequestedAt: {
+			type: Date,
+			default: null,
+		},
+		deletionScheduledFor: {
+			type: Date,
+			default: null,
+		},
 	},
 	{ timestamps: true },
 );
+
+userSchema.index({ pendingDeletion: 1, deletionScheduledFor: 1 });
 
 // Hash password before saving
 userSchema.pre("save", async function () {

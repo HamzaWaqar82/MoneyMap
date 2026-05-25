@@ -9,6 +9,7 @@ const {
 	getVapidPublicKey,
 	subscribePush,
 	unsubscribePush,
+	testPush,
 } = require("../controllers/notificationsController");
 
 const router = express.Router();
@@ -50,6 +51,13 @@ router.put("/push/subscribe", authenticate, subscribePush);
  * @access  Private
  */
 router.delete("/push/subscribe", authenticate, unsubscribePush);
+
+/**
+ * @route   POST /api/notifications/push/test
+ * @desc    Send a test push notification to the current user
+ * @access  Private
+ */
+router.post("/push/test", authenticate, testPush);
 
 /**
  * @route   PUT /api/notifications/read-all

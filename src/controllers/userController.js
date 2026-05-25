@@ -1,6 +1,11 @@
 const User = require("../models/User");
 const { validateUpdateProfile } = require("../validators/userValidator");
 const { sendSuccess, sendError } = require("../utils/responseFormatter");
+const {
+	purgeUserData,
+	scheduleAccountDeletion,
+	DELETION_GRACE_DAYS,
+} = require("../services/accountDeletion.service");
 
 // Get User Profile
 const getProfile = async (req, res, next) => {
@@ -120,13 +125,12 @@ const updateProfile = async (req, res, next) => {
 	}
 };
 
-// Delete User Account
+// Delete User Account (immediate purge or 30-day scheduled deletion)
 const deleteAccount = async (req, res, next) => {
 	try {
 		const userId = req.user.id;
-		const { password } = req.body;
+		const { password, deletionMode = "scheduled" } = req.body;
 
-		// Validate password is provided
 		if (!password) {
 			return sendError(
 				res,
@@ -136,14 +140,21 @@ const deleteAccount = async (req, res, next) => {
 			);
 		}
 
-		// Find user with password
+		if (!["immediate", "scheduled"].includes(deletionMode)) {
+			return sendError(
+				res,
+				'deletionMode must be "immediate" or "scheduled"',
+				"INVALID_DELETION_MODE",
+				400,
+			);
+		}
+
 		const user = await User.findById(userId).select("+passwordHash");
 
 		if (!user) {
 			return sendError(res, "User not found", "USER_NOT_FOUND", 404);
 		}
 
-		// Verify password
 		const isPasswordValid = await user.comparePassword(password);
 
 		if (!isPasswordValid) {
@@ -155,10 +166,28 @@ const deleteAccount = async (req, res, next) => {
 			);
 		}
 
-		// Delete user
-		await User.findByIdAndDelete(userId);
+		if (deletionMode === "immediate") {
+			await purgeUserData(userId);
+			return sendSuccess(
+				res,
+				{ mode: "immediate", purged: true },
+				"Account and all associated data deleted permanently",
+				200,
+			);
+		}
 
-		sendSuccess(res, null, "Account deleted successfully", 200);
+		const schedule = await scheduleAccountDeletion(user);
+		return sendSuccess(
+			res,
+			{
+				mode: "scheduled",
+				deletionScheduledFor: schedule.deletionScheduledFor,
+				graceDays: DELETION_GRACE_DAYS,
+				message: `Account scheduled for deletion. Log in within ${DELETION_GRACE_DAYS} days to cancel.`,
+			},
+			`Account scheduled for deletion in ${DELETION_GRACE_DAYS} days. Log in before then to keep your account.`,
+			200,
+		);
 	} catch (error) {
 		next(error);
 	}

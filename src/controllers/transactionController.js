@@ -82,14 +82,20 @@ const createTransaction = async (req, res, next) => {
 			}
 		}
 
-		// Sync budgets and trigger alerts
+		let alertsTriggered = 0;
+		let pushSent = false;
 		try {
 			const month = getMonthKey(transaction.transactionDate);
 			const updatedBudgets = await syncBudgets(userId, [month]);
-			await checkAndNotify(userId, updatedBudgets);
+			const created = await checkAndNotify(userId, updatedBudgets);
+			alertsTriggered = created.length;
+			pushSent = created.some((r) => r?.pushSent);
 		} catch (budgetErr) {
 			console.error("Budget sync error:", budgetErr);
 		}
+
+		const userForPush = await User.findById(userId).select("pushSubscription");
+		const hasPushSubscription = !!userForPush?.pushSubscription;
 
 		sendSuccess(
 			res,
@@ -104,6 +110,9 @@ const createTransaction = async (req, res, next) => {
 				paymentMethod: transaction.paymentMethod,
 				accountId: transaction.accountId,
 				createdAt: transaction.createdAt,
+				alertsTriggered,
+				pushSent,
+				hasPushSubscription,
 			},
 			"Transaction created successfully",
 			201,

@@ -10,11 +10,8 @@ jest.mock("../../models/User", () => ({
 
 jest.mock("../../services/pushNotification.service", () => ({
 	dispatchNotification: jest.fn().mockImplementation(async (user, type, message) => ({
-		_id: "notif1",
-		userId: user._id,
-		type,
-		message,
-		isRead: false,
+		notif: { _id: "notif1", userId: user._id, type, message, isRead: false },
+		pushSent: false,
 	})),
 }));
 

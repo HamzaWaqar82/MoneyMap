@@ -35,6 +35,7 @@ const transporter = nodemailer.createTransport({
  * @param {String} severity - 'info', 'warning', 'high'
  */
 const dispatchNotification = async (user, type, message, severity = 'info') => {
+	let pushSent = false;
 	try {
 		// 1. Always create an In-App Notification
 		const notif = new Notification({
@@ -49,9 +50,9 @@ const dispatchNotification = async (user, type, message, severity = 'info') => {
 			try {
 				const payload = JSON.stringify({ title: "MoneyMap Alert", body: message, type });
 				await webpush.sendNotification(user.pushSubscription, payload);
+				pushSent = true;
 			} catch (pushErr) {
 				console.error("Web Push failed:", pushErr.message);
-				// If subscription is invalid (410 Gone), we could clear it
 				if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
 					user.pushSubscription = null;
 					await user.save();
@@ -75,7 +76,7 @@ const dispatchNotification = async (user, type, message, severity = 'info') => {
 			}
 		}
 
-		return notif;
+		return { notif, pushSent };
 	} catch (error) {
 		console.error("Notification Dispatch Error:", error);
 		throw error;

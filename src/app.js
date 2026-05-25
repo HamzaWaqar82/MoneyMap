@@ -23,6 +23,7 @@ const categoryRoutes = require("./routes/categories.routes");
 const expenseTrackerRoutes = require("./routes/expenseTracker.routes");
 const { seedCategories } = require("./seeds/categorySeeder");
 const { startNotificationCron } = require("./services/notificationCron.service");
+const { startAccountDeletionCron } = require("./services/accountDeletionCron.service");
 
 const app = express();
 
@@ -43,7 +44,8 @@ console.log("[APP] About to call connectDB()...");
 	// Start Cron jobs (skip in test environment)
 	if (process.env.NODE_ENV !== "test") {
 		startNotificationCron();
-		console.log("[APP] ✅ Notification Cron Jobs started");
+		startAccountDeletionCron();
+		console.log("[APP] ✅ Background cron jobs started");
 	}
 })().catch(e => console.log("[APP] ❌ DB Promise rejected:", e.message));
 

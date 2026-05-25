@@ -49,8 +49,8 @@ const checkAndNotify = async (userId, updatedBudgets) => {
 			if (!existing) {
 				const user = await User.findById(userId);
 				if (user) {
-					const notif = await dispatchNotification(user, "budget_alert", message, "high");
-					created.push(notif);
+					const result = await dispatchNotification(user, "budget_alert", message, "high");
+					created.push(result);
 				}
 			}
 		}
@@ -70,8 +70,8 @@ const checkAndNotify = async (userId, updatedBudgets) => {
 			if (!existing) {
 				const user = await User.findById(userId);
 				if (user) {
-					const notif = await dispatchNotification(user, "budget_alert", message, "warning");
-					created.push(notif);
+					const result = await dispatchNotification(user, "budget_alert", message, "warning");
+					created.push(result);
 				}
 			}
 		}

@@ -247,6 +247,46 @@ const subscribePush = async (req, res, next) => {
 	}
 };
 
+// Send a test push notification to the current user
+const testPush = async (req, res, next) => {
+	try {
+		const userId = req.user.id;
+		const user = await User.findById(userId);
+
+		if (!user) {
+			return sendError(res, "User not found", "USER_NOT_FOUND", 404);
+		}
+
+		if (!user.pushSubscription) {
+			return sendError(
+				res,
+				"Enable push notifications in Profile first",
+				"NO_PUSH_SUBSCRIPTION",
+				400,
+			);
+		}
+
+		const { dispatchNotification } = require("../services/pushNotification.service");
+		const result = await dispatchNotification(
+			user,
+			"budget_alert",
+			"Test alert: push notifications are working!",
+			"high",
+		);
+
+		sendSuccess(
+			res,
+			{ pushSent: result.pushSent, message: result.notif.message },
+			result.pushSent
+				? "Test push notification sent"
+				: "In-app notification created but push delivery failed",
+			200,
+		);
+	} catch (error) {
+		next(error);
+	}
+};
+
 // Remove browser push subscription
 const unsubscribePush = async (req, res, next) => {
 	try {
@@ -275,4 +315,5 @@ module.exports = {
 	getVapidPublicKey,
 	subscribePush,
 	unsubscribePush,
+	testPush,
 };
