@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
+import { NotificationProvider } from './context/NotificationContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -13,6 +14,16 @@ import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
 import Accounts from './pages/Accounts';
+
+function ProtectedLayout({ children }) {
+  return (
+    <ProtectedRoute>
+      <NotificationProvider>
+        <Layout>{children}</Layout>
+      </NotificationProvider>
+    </ProtectedRoute>
+  );
+}
 
 function App() {
   return (
@@ -26,14 +37,16 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-          <Route path="/transactions" element={<ProtectedRoute><Layout><Transactions /></Layout></ProtectedRoute>} />
-          <Route path="/budgets" element={<ProtectedRoute><Layout><Budgets /></Layout></ProtectedRoute>} />
-          <Route path="/goals" element={<ProtectedRoute><Layout><Goals /></Layout></ProtectedRoute>} />
-          <Route path="/reports" element={<ProtectedRoute><Layout><Reports /></Layout></ProtectedRoute>} />
-          <Route path="/notifications" element={<ProtectedRoute><Layout><Notifications /></Layout></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
-          <Route path="/accounts" element={<ProtectedRoute><Layout><Accounts /></Layout></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
+          <Route path="/transactions" element={<ProtectedLayout><Transactions /></ProtectedLayout>} />
+          <Route path="/budgets" element={<ProtectedLayout><Budgets /></ProtectedLayout>} />
+          <Route path="/goals" element={<ProtectedLayout><Goals /></ProtectedLayout>} />
+          <Route path="/reports" element={<ProtectedLayout><Reports /></ProtectedLayout>} />
+          <Route path="/notifications" element={<ProtectedLayout><Notifications /></ProtectedLayout>} />
+          <Route path="/profile" element={<ProtectedLayout><Profile /></ProtectedLayout>} />
+          <Route path="/accounts" element={<ProtectedLayout><Accounts /></ProtectedLayout>} />
+          <Route path="/import" element={<Navigate to="/transactions" replace />} />
+          <Route path="/expense-tracker" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>

@@ -21,6 +21,7 @@ const getProfile = async (req, res, next) => {
 				email: user.email,
 				role: user.role,
 				currencyPreference: user.currencyPreference,
+				hasPushSubscription: !!user.pushSubscription,
 				createdAt: user.createdAt,
 			},
 			"Profile retrieved successfully",

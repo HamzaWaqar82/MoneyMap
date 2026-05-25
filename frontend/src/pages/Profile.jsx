@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Modal from '../components/Modal';
-import { Save, Trash2, Shield } from 'lucide-react';
+import { Save, Trash2, Shield, Bell, BellOff } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 const CURRENCIES = ['PKR','USD','EUR','GBP','AUD'];
 
@@ -16,6 +17,23 @@ export default function Profile() {
   const [deleteModal, setDeleteModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [errors, setErrors] = useState({});
+  const { supported, subscribed, loading: pushLoading, enable, disable, checkStatus } = usePushNotifications();
+
+  useEffect(() => { checkStatus(); }, [checkStatus]);
+
+  const handlePushToggle = async () => {
+    try {
+      if (subscribed) {
+        await disable();
+        toast.success('Browser notifications disabled');
+      } else {
+        await enable();
+        toast.success('Browser notifications enabled');
+      }
+    } catch (err) {
+      toast.error(err.message || 'Could not update push notifications');
+    }
+  };
 
   const handleProfile = async (e) => {
     e.preventDefault(); setSaving(true);
@@ -41,7 +59,7 @@ export default function Profile() {
 
   const handleDelete = async () => {
     try {
-      await api.put('/users/account', { password: deletePassword });
+      await api.deleteWithBody('/users/account', { password: deletePassword });
       toast.success('Account deleted'); logout();
     } catch (err) { toast.error(err.message); }
   };
@@ -67,6 +85,20 @@ export default function Profile() {
           </div>
           <button type="submit" className="btn btn-primary" disabled={saving}><Save size={16}/> {saving ? 'Saving...' : 'Save Changes'}</button>
         </form>
+      </div>
+
+      <div className="card">
+        <div className="card-header"><h3 style={{ display:'flex', alignItems:'center', gap:8 }}><Bell size={18}/> Browser Notifications</h3></div>
+        <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 16 }}>
+          Get real-time alerts when budgets are exceeded or large expenses are recorded. In-app notifications always appear on the Notifications page.
+        </p>
+        {!supported ? (
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Push notifications are not supported in this browser.</p>
+        ) : (
+          <button type="button" className={`btn ${subscribed ? 'btn-outline' : 'btn-primary'}`} onClick={handlePushToggle} disabled={pushLoading}>
+            {subscribed ? <><BellOff size={16}/> Disable Push Notifications</> : <><Bell size={16}/> Enable Push Notifications</>}
+          </button>
+        )}
       </div>
 
       <div className="card">

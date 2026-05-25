@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 const STEPS = ['Select & Upload', 'Review Transactions', 'Complete'];
 
-export default function CSVImportTab() {
+export default function CSVImportTab({ onImportComplete }) {
   const [step, setStep] = useState(0);
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState('');
@@ -61,6 +61,7 @@ export default function CSVImportTab() {
       setImportResult(res.data);
       setStep(2);
       toast.success(`${res.data.saved} transactions imported!`);
+      onImportComplete?.();
     } catch (err) { toast.error(err.message); }
     finally { setConfirming(false); }
   };

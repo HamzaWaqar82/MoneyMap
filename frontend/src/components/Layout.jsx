@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../api/client';
+import { useNotifications } from '../context/NotificationContext';
 import {
   LayoutDashboard, ArrowLeftRight, Wallet, Target, BarChart3,
-  Bell, User, LogOut, Menu, X, Building2, Upload, PieChart
+  Bell, User, LogOut, Menu, X, Building2
 } from 'lucide-react';
 
 const navItems = [
@@ -14,8 +14,6 @@ const navItems = [
   { path: '/goals', label: 'Goals', icon: Target },
   { path: '/reports', label: 'Reports', icon: BarChart3 },
   { path: '/accounts', label: 'Accounts', icon: Building2 },
-  { path: '/import', label: 'Import CSV', icon: Upload },
-  { path: '/expense-tracker', label: 'Expense Tracker', icon: PieChart },
   { path: '/notifications', label: 'Notifications', icon: Bell },
 ];
 
@@ -26,8 +24,6 @@ const pageTitles = {
   '/goals': { title: 'Savings Goals', sub: 'Track progress toward your goals' },
   '/reports': { title: 'Reports', sub: 'Financial analytics & insights' },
   '/accounts': { title: 'Accounts', sub: 'Manage your bank accounts & wallets' },
-  '/import': { title: 'Import CSV', sub: 'Upload bank statements for auto-categorization' },
-  '/expense-tracker': { title: 'Expense Tracker', sub: 'Monthly summaries & category breakdown' },
   '/notifications': { title: 'Notifications', sub: 'Stay updated on your finances' },
   '/profile': { title: 'Profile', sub: 'Manage your account settings' },
 };
@@ -37,17 +33,15 @@ export default function Layout({ children }) {
   const location = useLocation();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { unreadCount, refreshUnread } = useNotifications();
 
   useEffect(() => {
     setIsMobileOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
-    api.get('/notifications/unread').then(res => {
-      setUnreadCount(res.data.unreadCount || 0);
-    }).catch(() => {});
-  }, [location.pathname]);
+    refreshUnread();
+  }, [location.pathname, refreshUnread]);
 
   const currentRouteInfo = pageTitles[location.pathname] || { title: 'MoneyMap', sub: 'Welcome back' };
   const initials = user?.fullName?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
@@ -68,7 +62,7 @@ export default function Layout({ children }) {
               onClick={() => setIsMobileOpen(false)}>
               <item.icon size={20} />
               {!isCollapsed && <span>{item.label}</span>}
-              {!isCollapsed && item.label === 'Notifications' && unreadCount > 0 && (
+              {item.label === 'Notifications' && unreadCount > 0 && (
                 <span className="badge">{unreadCount}</span>
               )}
             </NavLink>

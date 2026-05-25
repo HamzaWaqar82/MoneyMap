@@ -40,9 +40,11 @@ console.log("[APP] About to call connectDB()...");
 		console.error("[APP] ⚠️ Category seeding failed:", seedError.message);
 	}
 
-	// Start Cron jobs
-	startNotificationCron();
-	console.log("[APP] ✅ Notification Cron Jobs started");
+	// Start Cron jobs (skip in test environment)
+	if (process.env.NODE_ENV !== "test") {
+		startNotificationCron();
+		console.log("[APP] ✅ Notification Cron Jobs started");
+	}
 })().catch(e => console.log("[APP] ❌ DB Promise rejected:", e.message));
 
 // ============================================

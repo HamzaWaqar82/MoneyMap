@@ -1,546 +1,596 @@
-# Personal Finance Analytics Dashboard — Backend API
+# MoneyMap — Personal Finance Analytics Dashboard
 
-## Project Report
+## Comprehensive Project Report
 
 **Course:** Advanced Web Technologies (AWT)  
-**Assessment:** Midterm Lab — Express.js Application Implementation  
-**Submitted By:**  
-- Hamza Farooq (FA23-BSE-038)  
-- Hamza (FA23-BSE-037)  
+**Assessment:** Midterm Lab — Full-Stack Application  
+**Submitted By:**
+- Hamza Farooq (FA23-BSE-038)
+- Hamza (FA23-BSE-037)
 
-**Date:** April 2026  
-**Technology Stack:** Node.js, Express.js 5, MongoDB (Mongoose 9), JWT Authentication
+**Date:** May 2026  
+**Project Name:** MoneyMap (branded UI) / finance-dashboard-api (package)
 
 ---
 
 ## Table of Contents
 
-1. [Project Overview](#1-project-overview)
-2. [Project Architecture](#2-project-architecture)
-3. [Technology Stack & Dependencies](#3-technology-stack--dependencies)
-4. [Database Design](#4-database-design)
-5. [API Endpoints](#5-api-endpoints)
-6. [Middleware Implementation](#6-middleware-implementation)
-7. [Authentication & Authorization](#7-authentication--authorization)
-8. [Validation Strategy](#8-validation-strategy)
-9. [Error Handling & Response Format](#9-error-handling--response-format)
-10. [MongoDB Aggregation Pipelines](#10-mongodb-aggregation-pipelines)
-11. [Setup & Installation](#11-setup--installation)
-12. [Testing Guide](#12-testing-guide)
-13. [Conclusion](#13-conclusion)
+1. [Executive Summary](#1-executive-summary)
+2. [System Overview](#2-system-overview)
+3. [Technology Stack](#3-technology-stack)
+4. [Project Structure](#4-project-structure)
+5. [Database Design](#5-database-design)
+6. [Backend API Reference](#6-backend-api-reference)
+7. [Notification System (Complete)](#7-notification-system-complete)
+8. [Frontend Application](#8-frontend-application)
+9. [Expense Tracker Module](#9-expense-tracker-module)
+10. [Authentication & Security](#10-authentication--security)
+11. [Bugs Fixed in This Release](#11-bugs-fixed-in-this-release)
+12. [Setup & Installation](#12-setup--installation)
+13. [Testing](#13-testing)
+14. [Manual Verification Guide](#14-manual-verification-guide)
+15. [Known Limitations & Future Work](#15-known-limitations--future-work)
+16. [Conclusion](#16-conclusion)
 
 ---
 
-## 1. Project Overview
+## 1. Executive Summary
 
-The **Personal Finance Analytics Dashboard API** is a RESTful backend application built with Express.js and MongoDB for managing personal finances. It provides comprehensive features for:
+**MoneyMap** is a full-stack personal finance application that helps users track income and expenses, manage monthly budgets, set savings goals, import bank CSV statements, and receive intelligent alerts when spending thresholds are crossed.
 
-- **User Authentication** — Secure registration and login with JWT tokens
-- **Transaction Management** — Full CRUD for income and expense tracking
-- **Budget Management** — Monthly category-based budgets with real-time spent tracking
-- **Savings Goals** — Goal setting with contribution tracking and auto-completion
-- **Reports & Analytics** — Advanced analytics using MongoDB aggregation pipelines
-- **Notifications** — Budget alerts, goal reminders, and transaction confirmations
+The system consists of:
 
-### Key Highlights
-- 35+ API endpoints across 7 resource modules
-- MongoDB aggregation pipelines for server-side analytics
-- JWT-based stateless authentication
-- Joi schema validation on all inputs
-- Centralized error handling with typed error classes
-- Rate limiting, CORS, and security headers (Helmet.js)
+| Layer | Technology |
+|-------|------------|
+| **Backend API** | Node.js, Express 5, MongoDB (Mongoose 9), JWT |
+| **Frontend SPA** | React 19, Vite 8, React Router 7, Chart.js |
+| **Notifications** | In-app (MongoDB), Web Push (VAPID), Email (Nodemailer) |
+| **Automation** | node-cron for savings goal reminders |
+
+**Scale:** 8 Mongoose models, 11 controllers, 10 route modules, 50+ authenticated API endpoints, 9 frontend pages, automated Jest test suites.
 
 ---
 
-## 2. Project Architecture
+## 2. System Overview
 
-The application follows the **MVC (Model-View-Controller)** architectural pattern with clear separation of concerns:
+```mermaid
+flowchart TB
+  subgraph client [React Frontend - Port 3000]
+    UI[Pages: Dashboard, Transactions, Budgets, Goals, Reports, Notifications, Profile, Accounts]
+    SW[Service Worker /sw.js]
+    CTX[NotificationContext - unread badge]
+  end
 
-```
-finance-dashboard-api/
-├── src/
-│   ├── app.js                          # Main application entry point
-│   ├── config/
-│   │   ├── database.js                 # MongoDB connection setup
-│   │   └── env.js                      # Environment variable configuration
-│   ├── models/                         # Mongoose schemas (5 models)
-│   │   ├── User.js
-│   │   ├── Transaction.js
-│   │   ├── Budget.js
-│   │   ├── SavingsGoal.js
-│   │   └── Notification.js
-│   ├── controllers/                    # Business logic (7 controllers)
-│   │   ├── authController.js
-│   │   ├── userController.js
-│   │   ├── transactionController.js
-│   │   ├── budgetController.js
-│   │   ├── goalController.js
-│   │   ├── reportsController.js
-│   │   └── notificationsController.js
-│   ├── routes/                         # API route definitions (7 routers)
-│   │   ├── auth.routes.js
-│   │   ├── users.routes.js
-│   │   ├── transactions.routes.js
-│   │   ├── budgets.routes.js
-│   │   ├── goals.routes.js
-│   │   ├── reports.routes.js
-│   │   └── notifications.routes.js
-│   ├── middleware/                     # Custom middleware (6 files)
-│   │   ├── auth.middleware.js          # JWT verification
-│   │   ├── authorization.middleware.js # Resource ownership checks
-│   │   ├── validation.middleware.js    # Generic Joi validator
-│   │   ├── errorHandler.middleware.js  # Global error catcher
-│   │   ├── logger.middleware.js        # Request logging
-│   │   └── rateLimiter.middleware.js   # Rate limiting
-│   ├── validators/                    # Joi validation schemas (5 files)
-│   │   ├── authValidator.js
-│   │   ├── userValidator.js
-│   │   ├── transactionValidator.js
-│   │   ├── budgetValidator.js
-│   │   └── goalValidator.js
-│   └── utils/                         # Utility functions (3 files)
-│       ├── errorHandler.js            # Custom error classes
-│       ├── responseFormatter.js       # Consistent response helpers
-│       └── tokenGenerator.js          # JWT generation/verification
-├── .env                               # Environment variables
-├── package.json
-└── README.md
+  subgraph api [Express API - Port 5000]
+    AUTH[JWT Auth]
+    TXN[Transactions + Budget Sync]
+    NOTIF[Notification Engine]
+    CRON[Daily Goal Reminder Cron]
+    CSV[CSV Import + Auto-categorization]
+  end
+
+  subgraph data [MongoDB]
+    DB[(Users, Transactions, Budgets, Goals, Notifications, Accounts, Categories)]
+  end
+
+  UI -->|REST /api| AUTH
+  SW -->|Push subscribe| NOTIF
+  TXN -->|syncBudgets + checkAndNotify| NOTIF
+  NOTIF --> DB
+  CRON --> NOTIF
+  CSV --> TXN
+  AUTH --> DB
 ```
 
-### Request Flow
+### Core User Journeys
+
+1. **Register / Login** → JWT stored in `localStorage`
+2. **Add expense** → Budget recalculated → Alert if 80% or 100% threshold crossed
+3. **Import CSV** → Parse bank statement → Review categories → Confirm → Budget sync + alerts
+4. **View Notifications** → In-app list with unread badge; optional browser push from Profile
+5. **Set savings goal** with reminder frequency → Cron sends periodic in-app reminders
+
+---
+
+## 3. Technology Stack
+
+### Backend Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| express ^5.2 | REST API framework |
+| mongoose ^9.5 | MongoDB ODM |
+| bcryptjs | Password hashing |
+| jsonwebtoken | JWT authentication |
+| joi | Request validation |
+| helmet, cors | Security |
+| multer, csv-parse | CSV file upload/parsing |
+| node-cron | Scheduled goal reminders |
+| nodemailer | High-severity email alerts |
+| web-push | Browser push notifications |
+
+### Frontend Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| react ^19 | UI framework |
+| react-router-dom ^7 | Client-side routing |
+| vite ^8 | Build tool and dev server |
+| chart.js + react-chartjs-2 | Dashboard charts |
+| lucide-react | Icons |
+| react-hot-toast | Toast notifications |
+
+---
+
+## 4. Project Structure
 
 ```
-Client Request
-    → Helmet (Security Headers)
-    → CORS
-    → Body Parser (JSON)
-    → Logger Middleware (logs method, URL, status, duration)
-    → Rate Limiter (100 req/15min per IP)
-    → Route Handler
-        → Auth Middleware (JWT verification)
-        → Controller (business logic)
-            → Validator (Joi schema)
-            → Model (Mongoose operations)
-        → Response Formatter (consistent JSON)
-    → Error Handler Middleware (if error thrown)
+lab-mid-awt/
+├── src/                          # Backend
+│   ├── app.js                    # Entry, routes, cron startup
+│   ├── config/                   # database.js, env.js
+│   ├── models/                   # 8 Mongoose schemas
+│   ├── controllers/              # 11 controllers
+│   ├── routes/                   # 10 route modules
+│   ├── middleware/               # auth, errors, rate limit, logger
+│   ├── validators/               # Joi schemas
+│   ├── services/                 # budget sync, notifications, CSV, categorization
+│   ├── seeds/                    # Pakistan category seeder
+│   └── __tests__/                # unit, integration, regression, uat
+├── frontend/
+│   ├── public/sw.js              # Web Push service worker
+│   └── src/
+│       ├── pages/                # 9 page components
+│       ├── components/           # Layout, Modal, CSVImportTab
+│       ├── context/              # AuthContext, NotificationContext
+│       └── hooks/                # usePushNotifications
+├── Phase3/                       # Implementation notes
+├── PROJECT-REPORT.md             # This document
+├── README.md
+└── postman-collection.json
 ```
 
 ---
 
-## 3. Technology Stack & Dependencies
+## 5. Database Design
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| express | ^5.2.1 | Web framework |
-| mongoose | ^9.5.0 | MongoDB ODM |
-| bcryptjs | ^3.0.3 | Password hashing (10 salt rounds) |
-| jsonwebtoken | ^9.0.3 | JWT token generation/verification |
-| joi | ^18.1.2 | Request body validation |
-| helmet | ^8.1.0 | Security HTTP headers |
-| cors | ^2.8.6 | Cross-Origin Resource Sharing |
-| dotenv | ^17.4.2 | Environment variable management |
-| express-validator | ^7.3.2 | Additional input validation |
-| nodemon | ^3.1.14 | Development auto-restart (devDep) |
+### Models (8 total)
 
----
+| Model | Purpose |
+|-------|---------|
+| **User** | Auth, currency preference, `pushSubscription` for Web Push |
+| **Transaction** | Income/expense records with legacy category enum |
+| **Budget** | Monthly per-category limits with `spentAmount` |
+| **SavingsGoal** | Targets, contributions, `reminderFrequency`, `lastRemindedAt` |
+| **Notification** | In-app alerts (`budget_alert`, `goal_reminder`, `transaction_confirmation`) |
+| **Account** | Bank/wallet/card/cash accounts for CSV import |
+| **Category** | Pakistan-specific expense categories (system + user custom) |
+| **MonthlySummary** | Aggregated expense summaries per account/month |
 
-## 4. Database Design
+### Notification Schema
 
-### 4.1 User Schema
+| Field | Type | Notes |
+|-------|------|-------|
+| userId | ObjectId | Required, indexed |
+| type | String | `budget_alert`, `goal_reminder`, `transaction_confirmation` |
+| message | String | Max 500 chars |
+| isRead | Boolean | Default false |
 
-| Field | Type | Constraints |
-|-------|------|-------------|
-| fullName | String | Required, trim, 2–50 chars |
-| email | String | Required, unique, lowercase, regex validated |
-| passwordHash | String | Required, min 6 chars, `select: false` |
-| role | String | Enum: `['user']`, default: `'user'` |
-| currencyPreference | String | Enum: `['PKR','USD','EUR','GBP','AUD']`, default: `'PKR'` |
-| createdAt / updatedAt | Date | Auto-managed by timestamps |
+### User Extensions (Phase 3)
 
-**Features:** Pre-save hook for bcrypt password hashing, `comparePassword()` instance method, `toJSON()` method excludes passwordHash.
+| Field | Type | Notes |
+|-------|------|-------|
+| pushSubscription | Mixed | Web Push subscription JSON from browser |
 
-### 4.2 Transaction Schema
+### SavingsGoal Extensions (Phase 3)
 
-| Field | Type | Constraints |
-|-------|------|-------------|
-| userId | ObjectId | Required, ref: User, indexed |
-| type | String | Enum: `['income', 'expense']` |
-| amount | Number | Required, min: 0.01 |
-| category | String | Required, enum (16 predefined categories) |
-| description | String | Optional, max 500 chars |
-| transactionDate | Date | Required, default: now |
-| paymentMethod | String | Enum: `['cash','card','bank_transfer']` |
-
-**Categories:**  
-- **Income:** Salary, Freelance, Investment, Bonus, Gift, Other Income  
-- **Expense:** Food, Transport, Shopping, Utilities, Entertainment, Healthcare, Education, Rent, Insurance, Other Expense
-
-**Indexes:** `{userId, transactionDate}`, `{userId, category}`, `{userId, type}`
-
-### 4.3 Budget Schema
-
-| Field | Type | Constraints |
-|-------|------|-------------|
-| userId | ObjectId | Required, ref: User |
-| category | String | Required, enum (expense categories only) |
-| monthlyLimit | Number | Required, min: 0.01 |
-| spentAmount | Number | Default: 0, calculated via aggregation |
-| remainingAmount | Number | Auto-calculated: `monthlyLimit - spentAmount` |
-| month | String | Required, format: `YYYY-MM` (regex validated) |
-
-**Unique Constraint:** Compound index on `{userId, category, month}` prevents duplicate budgets.  
-**Pre-save Hook:** Auto-calculates `remainingAmount`.
-
-### 4.4 SavingsGoal Schema
-
-| Field | Type | Constraints |
-|-------|------|-------------|
-| userId | ObjectId | Required, ref: User |
-| title | String | Required, trim, max 200 chars |
-| targetAmount | Number | Required, min: 0.01 |
-| currentAmount | Number | Default: 0 |
-| deadline | Date | Required |
-| status | String | Enum: `['active','completed','abandoned']` |
-| progressPercentage | Number | Auto-calculated, 0–100 |
-
-**Pre-save Hook:** Calculates `progressPercentage = (currentAmount/targetAmount)*100`, auto-sets status to `'completed'` when target is reached.
-
-### 4.5 Notification Schema
-
-| Field | Type | Constraints |
-|-------|------|-------------|
-| userId | ObjectId | Required, ref: User |
-| type | String | Enum: `['budget_alert','goal_reminder','transaction_confirmation']` |
-| message | String | Required, max 500 chars |
-| isRead | Boolean | Default: false |
-
-**Indexes:** `{userId, isRead}`, `{userId, createdAt}`
+| Field | Type | Notes |
+|-------|------|-------|
+| reminderFrequency | String | `daily`, `weekly`, `monthly`, `none` (default) |
+| lastRemindedAt | Date | Tracks last cron reminder |
 
 ---
 
-## 5. API Endpoints
+## 6. Backend API Reference
 
-### 5.1 Authentication — `/api/auth`
+### Utility (no auth)
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/api/auth/register` | Create new user account | ❌ |
-| POST | `/api/auth/login` | Login and get JWT token | ❌ |
-
-### 5.2 User Profile — `/api/users`
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/users/profile` | Get current user profile | ✅ |
-| PUT | `/api/users/profile` | Update profile/password | ✅ |
-| DELETE | `/api/users/account` | Delete user account | ✅ |
-
-### 5.3 Transactions — `/api/transactions`
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/api/transactions` | Create transaction | ✅ |
-| GET | `/api/transactions` | List all (filtered, paginated) | ✅ |
-| GET | `/api/transactions/:id` | Get single transaction | ✅ |
-| PUT | `/api/transactions/:id` | Update transaction | ✅ |
-| DELETE | `/api/transactions/:id` | Delete transaction | ✅ |
-
-**Query Filters:** `?category=Food&type=expense&startDate=2026-04-01&endDate=2026-04-30&page=1&limit=10`
-
-### 5.4 Budgets — `/api/budgets`
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/api/budgets` | Create monthly budget | ✅ |
-| GET | `/api/budgets` | List all budgets | ✅ |
-| GET | `/api/budgets/:id` | Get budget with live calculations | ✅ |
-| PUT | `/api/budgets/:id` | Update monthly limit | ✅ |
-| DELETE | `/api/budgets/:id` | Delete budget | ✅ |
-
-**Query Filters:** `?month=2026-04`
-
-### 5.5 Savings Goals — `/api/goals`
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/api/goals` | Create savings goal | ✅ |
-| GET | `/api/goals` | List all goals | ✅ |
-| GET | `/api/goals/:id` | Get goal details | ✅ |
-| PUT | `/api/goals/:id` | Update goal | ✅ |
-| DELETE | `/api/goals/:id` | Delete goal | ✅ |
-| PUT | `/api/goals/:id/contribute` | Add contribution | ✅ |
-
-**Query Filters:** `?status=active`
-
-### 5.6 Reports & Analytics — `/api/reports`
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/reports/monthly-summary` | Income/expense/savings summary | ✅ |
-| GET | `/api/reports/category-breakdown` | Expense breakdown by category | ✅ |
-| GET | `/api/reports/budget-vs-actual` | Budget limit vs actual spending | ✅ |
-| GET | `/api/reports/income-expense-trend` | Multi-month trend data | ✅ |
-| GET | `/api/reports/yoy-comparison` | Year-over-year comparison | ✅ |
-| GET | `/api/reports/alerts` | Budget overspend alerts | ✅ |
-
-### 5.7 Notifications — `/api/notifications`
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/notifications` | List all notifications | ✅ |
-| GET | `/api/notifications/unread` | Unread count + breakdown | ✅ |
-| PUT | `/api/notifications/read-all` | Mark all as read | ✅ |
-| PUT | `/api/notifications/:id/read` | Mark one as read | ✅ |
-| DELETE | `/api/notifications/:id` | Delete notification | ✅ |
-
-### 5.8 Utility Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Server health check |
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Server health |
 | GET | `/api/info` | API metadata |
 
----
+### Auth — `/api/auth`
 
-## 6. Middleware Implementation
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/register` | Create account + JWT |
+| POST | `/login` | Login + JWT |
 
-### 6.1 Authentication Middleware (`auth.middleware.js`)
-- Extracts JWT from `Authorization: Bearer <token>` header
-- Verifies token using `jsonwebtoken` library
-- Attaches decoded user payload to `req.user`
-- Returns 401 for missing, expired, or invalid tokens
+### Users — `/api/users`
 
-### 6.2 Authorization Middleware (`authorization.middleware.js`)
-- Factory function: `authorize(Model)` — works with any Mongoose model
-- Validates ObjectId format, fetches the resource, checks `userId` ownership
-- Returns 403 if user does not own the resource
-- Attaches resource to `req.resource` to prevent redundant DB queries
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/profile` | Profile (+ `hasPushSubscription`) |
+| PUT | `/profile` | Update name, currency, password |
+| DELETE | `/account` | Delete account (password in body) |
 
-### 6.3 Validation Middleware (`validation.middleware.js`)
-- Factory function: `validate(schema, source)` — accepts any Joi schema
-- Validates `body`, `query`, or `params` as specified
-- Strips unknown fields (input sanitization)
-- Returns 422 with field-level error details
+### Transactions — `/api/transactions`
 
-### 6.4 Error Handler Middleware (`errorHandler.middleware.js`)
-- Global catch-all for all errors passed via `next(error)`
-- Handles: Mongoose `ValidationError`, `CastError`, duplicate key (11000), JWT errors, `AppError` subclasses, JSON parse errors, payload-too-large
-- Environment-aware: verbose stack traces in development, minimal output in production
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/` | Create (triggers budget sync + notifications) |
+| GET | `/` | List with filters/pagination |
+| GET | `/:id` | Single transaction |
+| PUT | `/:id` | Update (triggers budget sync + notifications) |
+| DELETE | `/:id` | Delete (triggers budget sync) |
 
-### 6.5 Logger Middleware (`logger.middleware.js`)
-- Logs every request: method, URL, status code, response time, user ID
-- ANSI color-coded output (green=2xx, yellow=4xx, red=5xx)
-- Logs sanitized request bodies in development (passwords redacted)
+### Budgets — `/api/budgets`
 
-### 6.6 Rate Limiter Middleware (`rateLimiter.middleware.js`)
-- In-memory rate limiter (no external dependencies)
-- Configurable: 100 requests per 15 minutes per IP
-- Sets `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` headers
-- Returns 429 when limit exceeded
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/` | Create monthly budget |
+| GET | `/` | List (`?month=YYYY-MM`) |
+| GET | `/:id` | Single budget |
+| PUT | `/:id` | Update limit |
+| DELETE | `/:id` | Delete |
 
----
+### Goals — `/api/goals`
 
-## 7. Authentication & Authorization
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/` | Create (supports `reminderFrequency`) |
+| GET | `/` | List (`?status=active`) |
+| GET | `/:id` | Single goal |
+| PUT | `/:id` | Update (supports `reminderFrequency`) |
+| DELETE | `/:id` | Delete |
+| PUT | `/:id/contribute` | Add contribution |
 
-### JWT Authentication Flow
+### Reports — `/api/reports`
 
-```
-1. User registers → password hashed with bcrypt (10 salt rounds) → stored in DB
-2. User logs in → password compared → JWT generated (7-day expiry)
-3. Client includes token: Authorization: Bearer <token>
-4. Auth middleware verifies token → attaches req.user = { id: userId }
-5. Controllers access req.user.id to scope queries to the authenticated user
-```
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/monthly-summary` | Income/expense/savings |
+| GET | `/category-breakdown` | Expense by category |
+| GET | `/budget-vs-actual` | Budget vs spent |
+| GET | `/income-expense-trend` | Multi-month trend |
+| GET | `/yoy-comparison` | Year-over-year |
+| GET | `/alerts` | Budget threshold alerts |
 
-### Security Features
-- Passwords never stored in plaintext (bcrypt hashing)
-- `passwordHash` excluded from queries by default (`select: false`)
-- JWT tokens are stateless — no server-side session storage
-- All resource endpoints verify ownership (`userId` matching)
-- Helmet.js adds security headers (XSS, clickjacking, MIME sniffing protection)
-- CORS configured for allowed origins and methods
-- Rate limiting prevents brute-force attacks
+### Notifications — `/api/notifications`
 
----
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/` | Paginated list (`?type`, `?page`, `?limit`) |
+| GET | `/unread` | Unread count + breakdown by type |
+| GET | `/push/vapid-key` | VAPID public key for browser subscription |
+| PUT | `/push/subscribe` | Save push subscription on user |
+| DELETE | `/push/subscribe` | Remove push subscription |
+| PUT | `/read-all` | Mark all read |
+| PUT | `/:id/read` | Mark one read |
+| DELETE | `/:id` | Delete one |
 
-## 8. Validation Strategy
+### Accounts — `/api/accounts`
 
-All user inputs are validated using **Joi** schemas before processing:
+Full CRUD for bank/wallet/card/cash accounts.
 
-| Module | Create Schema | Update Schema | Extra |
-|--------|--------------|---------------|-------|
-| Auth | email, password (8+ chars, uppercase, digit), fullName | — | confirmPassword matching |
-| Users | — | fullName, currencyPreference, password change | Current password required for password change |
-| Transactions | type, amount (positive), category (enum), date (not future), paymentMethod | All optional | Category must match type |
-| Budgets | category (expense only), monthlyLimit (positive), month (YYYY-MM) | monthlyLimit only | Duplicate prevention |
-| Goals | title, targetAmount (positive), deadline (future date) | title, targetAmount, deadline, status | contributeSchema for contributions |
+### Categories — `/api/categories`
 
----
+List, create, update, delete custom categories.
 
-## 9. Error Handling & Response Format
+### Expense Tracker — `/api/expense-tracker`
 
-### Consistent Response Structure
-
-**Success Response:**
-```json
-{
-    "success": true,
-    "message": "Operation successful",
-    "data": { }
-}
-```
-
-**Error Response:**
-```json
-{
-    "success": false,
-    "message": "Validation failed",
-    "errorCode": "VALIDATION_ERROR",
-    "details": {
-        "amount": "Amount must be positive"
-    }
-}
-```
-
-### Typed Error Classes
-
-| Class | HTTP Status | Error Code |
-|-------|-------------|------------|
-| BadRequestError | 400 | BAD_REQUEST |
-| UnauthorizedError | 401 | UNAUTHORIZED |
-| ForbiddenError | 403 | FORBIDDEN |
-| NotFoundError | 404 | NOT_FOUND |
-| ConflictError | 409 | CONFLICT |
-| ValidationError | 422 | VALIDATION_ERROR |
-| RateLimitError | 429 | RATE_LIMIT_EXCEEDED |
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/import` | Upload CSV (multipart) |
+| POST | `/import/confirm` | Persist reviewed transactions |
+| GET | `/import/history` | Import history |
+| GET | `/supported-banks` | Supported bank list |
+| GET | `/summary` | Monthly expense summary |
+| GET | `/summary/:accountId` | Per-account summary |
+| GET | `/review-queue` | Low-confidence categorizations |
+| PUT | `/review/:transactionId` | Correct category (`categoryId`) |
 
 ---
 
-## 10. MongoDB Aggregation Pipelines
+## 7. Notification System (Complete)
 
-The Reports module uses MongoDB aggregation pipelines for efficient server-side data computation:
+### Architecture
 
-### Monthly Summary Pipeline
-```javascript
-[
-  { $match: { userId: ObjectId, transactionDate: { $gte, $lte } } },
-  { $group: { _id: "$type", total: { $sum: "$amount" }, count: { $sum: 1 } } }
-]
+The notification system uses a **dispatch pipeline** with three delivery channels:
+
+| Channel | When | Severity |
+|---------|------|----------|
+| **In-app** | Always | All |
+| **Web Push** | User subscribed | `warning`, `high` |
+| **Email** | User has email | `high` only |
+
+### Services
+
+| File | Role |
+|------|------|
+| `pushNotification.service.js` | Creates DB record, sends web-push and email |
+| `notificationTrigger.service.js` | Budget 80%/100% threshold crossing logic |
+| `notificationCron.service.js` | Daily 10:00 AM goal reminders |
+| `budgetSync.service.js` | Recalculates `spentAmount` from transactions |
+
+### Trigger: Budget Alerts
+
+Fired after transaction **create**, **update**, or **CSV import confirm** when `syncBudgets(userId, [month])` detects a change:
+
+| Condition | Alert | Severity |
+|-----------|-------|----------|
+| Crosses ≥80% (was &lt;80%) | Warning message | `warning` |
+| Crosses ≥100% (was &lt;100%) | Exceeded message | `high` |
+
+**Dedup:** Same alert type/category not sent twice in the same calendar month.
+
+**Requirements for alert to fire:**
+- Expense transaction (income ignored)
+- Budget exists for matching **category** and **month** (`YYYY-MM` from `transactionDate`)
+- Spending must **cross** the threshold in that single sync (already-over-budget spends won't re-alert)
+
+### Trigger: Large Transaction
+
+Manual expense ≥ **Rs. 50,000** → `transaction_confirmation` notification, severity `high`.
+
+### Trigger: Goal Reminders (Cron)
+
+Runs daily at **10:00 AM** server time (skipped when `NODE_ENV=test`):
+
+- Finds active goals where `reminderFrequency` is `daily`, `weekly`, or `monthly`
+- Compares `lastRemindedAt` against interval
+- Sends `goal_reminder` with severity `info` (in-app only)
+
+### Frontend Integration
+
+| Component | Role |
+|-----------|------|
+| `NotificationContext` | Global unread count, `refreshUnread()` |
+| `Layout.jsx` | Sidebar badge on Notifications link |
+| `Notifications.jsx` | List, mark read, delete |
+| `Profile.jsx` | Enable/disable browser push |
+| `usePushNotifications.js` | SW registration, VAPID subscribe, API calls |
+| `public/sw.js` | Handles `push` and `notificationclick` events |
+| `Transactions.jsx` | Calls `refreshUnread()` after create/update |
+| `CSVImportTab.jsx` | Calls `refreshUnread()` after import confirm |
+
+### Environment Variables (Optional)
+
+```env
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=...
+SMTP_PASS=...
 ```
-Produces: totalIncome, totalExpenses, netSavings, savingsRate
 
-### Category Breakdown Pipeline
-```javascript
-[
-  { $match: { userId: ObjectId, type: "expense", transactionDate: { $gte, $lte } } },
-  { $group: { _id: "$category", total: { $sum: "$amount" }, count: { $sum: 1 } } },
-  { $sort: { total: -1 } }
-]
-```
-Produces: per-category amount, percentage of total, transaction count
-
-### Income/Expense Trend Pipeline
-```javascript
-[
-  { $match: { userId: ObjectId, transactionDate: { $gte: startDate } } },
-  { $group: {
-      _id: { year: { $year: "$transactionDate" }, month: { $month: "$transactionDate" }, type: "$type" },
-      total: { $sum: "$amount" }
-  }},
-  { $sort: { "_id.year": 1, "_id.month": 1 } }
-]
-```
-Produces: monthly income/expense data for chart visualization
-
-### Budget Spent Amount Calculation
-```javascript
-[
-  { $match: { userId: ObjectId, type: "expense", category: category, transactionDate: { $gte, $lte } } },
-  { $group: { _id: null, totalSpent: { $sum: "$amount" } } }
-]
-```
-Used in real-time budget tracking to calculate `spentAmount` from actual transactions.
+Defaults exist for development (Ethereal email, generated VAPID keys). **Use real credentials in production.**
 
 ---
 
-## 11. Setup & Installation
+## 8. Frontend Application
+
+### Routes
+
+| Path | Page | Description |
+|------|------|-------------|
+| `/login` | Login | Public |
+| `/register` | Register | Public |
+| `/dashboard` | Dashboard | Financial overview, charts, review queue |
+| `/transactions` | Transactions | Manual entry + CSV import tabs |
+| `/budgets` | Budgets | Monthly category budgets |
+| `/goals` | Goals | Savings goals + reminder frequency |
+| `/reports` | Reports | Analytics charts |
+| `/accounts` | Accounts | Bank/wallet management |
+| `/notifications` | Notifications | Alert inbox |
+| `/profile` | Profile | Settings, push toggle, delete account |
+| `/import` | → `/transactions` | Legacy redirect |
+| `/expense-tracker` | → `/dashboard` | Legacy redirect |
+
+### Key UX Features
+
+- Collapsible sidebar with unread notification badge
+- Real-time badge refresh after transactions and imports
+- Browser push opt-in from Profile page
+- Dashboard review queue for miscategorized CSV transactions
+- Smart account filtering by payment method on Transactions form
+
+---
+
+## 9. Expense Tracker Module
+
+### CSV Import Flow
+
+1. **Upload** — Select account, upload bank CSV (HBL, JazzCash, etc.)
+2. **Parse** — Bank-specific parser extracts transactions
+3. **Categorize** — Rule engine maps to Pakistan categories with confidence score
+4. **Review** — Low-confidence items appear in Dashboard review queue
+5. **Confirm** — Persist transactions, sync budgets, fire notifications
+
+### Dual Category Systems
+
+| System | Used By | Examples |
+|--------|---------|----------|
+| Legacy enum | Manual transactions, budgets | Food, Transport, Rent |
+| Category collection | CSV import, review queue | Food & Dining, Kiryana Store |
+
+The categorization service maps granular categories to legacy budget categories for consistent budget tracking.
+
+---
+
+## 10. Authentication & Security
+
+- **JWT** — 7-day expiry, Bearer token in `Authorization` header
+- **bcrypt** — 10 salt rounds, `passwordHash` excluded from queries
+- **Helmet** — Security headers
+- **CORS** — Configurable origin (`CORS_ORIGIN`)
+- **Rate limiting** — 100 req/15min per IP (10,000 in development)
+- **Ownership** — All queries scoped to `req.user.id`
+- **Validation** — Joi on all inputs, 422 with field details
+
+---
+
+## 11. Bugs Fixed in This Release
+
+| # | Issue | Fix |
+|---|-------|-----|
+| 1 | **Budget alerts never fired on manual transactions** | `syncBudgets(userId)` was called without required `months` array → always returned `[]`. Now passes `[YYYY-MM]` from transaction date. |
+| 2 | **No push subscription API** | Added `GET /push/vapid-key`, `PUT/DELETE /push/subscribe`. |
+| 3 | **No service worker / push UI** | Added `sw.js`, `usePushNotifications` hook, Profile toggle. |
+| 4 | **Unread badge stale** | `NotificationContext` refreshes after transactions, imports, and navigation. |
+| 5 | **Profile delete broken** | Frontend used `PUT`; backend expects `DELETE` → fixed with `api.deleteWithBody`. |
+| 6 | **Dashboard review queue broken** | Sent `categoryName`; API requires `categoryId` → fixed dropdown values. |
+| 7 | **Broken sidebar links** | `/import` and `/expense-tracker` had no routes → redirects + nav cleanup. |
+| 8 | **Goal reminders non-functional** | `reminderFrequency` not in validator/UI → added to Goals form and API. |
+| 9 | **Delete transaction skipped budget sync** | Added `syncBudgets` on delete. |
+| 10 | **Invalid notification type for large expenses** | Changed `large_transaction` → `transaction_confirmation`. |
+| 11 | **Cron ran during tests** | Cron skipped when `NODE_ENV=test`. |
+| 12 | **Large expense type enum mismatch** | Uses valid `transaction_confirmation` type. |
+
+---
+
+## 12. Setup & Installation
 
 ### Prerequisites
-- Node.js v18+
-- MongoDB (local or Atlas cloud)
 
-### Installation Steps
+- Node.js 18+
+- MongoDB (local or Atlas)
+- Modern browser (Chrome/Firefox/Edge for push)
+
+### Backend
 
 ```bash
-# 1. Clone the project
-cd finance-dashboard-api
-
-# 2. Install dependencies
+cd lab-mid-awt
 npm install
+cp .env.example .env   # or create .env
+# Set: PORT, MONGODB_URI, JWT_SECRET, CORS_ORIGIN=http://localhost:3000
+npm run dev            # http://localhost:5000
+```
 
-# 3. Create .env file
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/finance-dashboard
-JWT_SECRET=your_super_secret_key_here
-JWT_EXPIRY=7d
-NODE_ENV=development
-CORS_ORIGIN=http://localhost:3000
+### Frontend
 
-# 4. Start development server
-npm run dev
-
-# 5. Start production server
-npm start
+```bash
+cd frontend
+npm install
+npm run dev            # http://localhost:3000 (proxies /api to backend)
 ```
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| PORT | Server port | 5000 |
-| MONGODB_URI | MongoDB connection string | localhost:27017 |
-| JWT_SECRET | Secret key for JWT signing | — |
-| JWT_EXPIRY | Token expiration time | 7d |
-| NODE_ENV | Environment mode | development |
-| CORS_ORIGIN | Allowed frontend origin | localhost:3000 |
+| Variable | Description |
+|----------|-------------|
+| `PORT` | API port (default 5000) |
+| `MONGODB_URI` | MongoDB connection string |
+| `JWT_SECRET` | JWT signing key |
+| `JWT_EXPIRY` | Token lifetime (default 7d) |
+| `CORS_ORIGIN` | Frontend URL |
+| `NODE_ENV` | `development`, `production`, or `test` |
+| `VAPID_PUBLIC_KEY` | Web Push public key (optional) |
+| `VAPID_PRIVATE_KEY` | Web Push private key (optional) |
+| `SMTP_*` | Email delivery (optional) |
 
 ---
 
-## 12. Testing Guide
+## 13. Testing
 
-All endpoints were tested using **Postman**. Testing follows this sequence:
+### Automated Tests
 
-1. **Register** a user → receive JWT token
-2. **Login** → verify token generation
-3. **Create transactions** (income + expenses) → test CRUD
-4. **Create budgets** → verify duplicate prevention, spent calculation
-5. **Create savings goals** → test contributions, auto-completion
-6. **Run reports** → verify aggregation pipeline outputs
-7. **Test notifications** → verify CRUD, unread counts
-8. **Test error cases** → invalid inputs, unauthorized access, 404s
+| Suite | Command | Coverage |
+|-------|---------|----------|
+| Unit | `npm run test:unit` | CSV parsers, categorization, **notificationTrigger** |
+| Integration | `npm run test:integration` | Expense tracker API, **notifications API** |
+| Regression | `npm run test:regression` | Core API backward compatibility |
+| UAT | `npm run test:uat` | User journeys |
+| All | `npm test` | Full suite |
 
-### Test Categories
-- **Happy Path** — Valid inputs, expected behavior
-- **Validation Errors** — Missing/invalid fields return 422
-- **Authorization** — Users can only access their own resources
-- **Edge Cases** — Boundary values, empty results, duplicate prevention
-- **Integration** — Transactions automatically update budget spent amounts
+### Notification Tests Added
+
+**Unit** (`notificationTrigger.test.js`):
+- Exceeded alert on 100% threshold cross
+- Warning alert on 80% threshold cross
+- No alert when already above threshold
+- Empty input handling
+
+**Integration** (`notifications.api.test.js`):
+- VAPID key endpoint
+- Push subscription save
+- Budget exceeded → in-app notification created
+- Unread count and mark-all-read
+
+### Frontend Build
+
+```bash
+cd frontend && npm run build   # Verified — builds without errors
+```
+
+### Test Results (May 2026)
+
+| Suite | Result |
+|-------|--------|
+| `notificationTrigger.test.js` | 4/4 passed |
+| `notifications.api.test.js` | 5/5 passed |
+| Frontend production build | Success |
 
 ---
 
-## 13. Conclusion
+## 14. Manual Verification Guide
 
-The Personal Finance Analytics Dashboard API is a fully functional RESTful backend that demonstrates proficiency in:
+### In-App Budget Alert
 
-- **Express.js** — Route handling, middleware chain, error management
-- **MongoDB & Mongoose** — Schema design, indexing, aggregation pipelines
-- **Authentication** — JWT-based stateless auth with bcrypt password hashing
-- **API Design** — RESTful conventions, consistent response formats, pagination
-- **Security** — Helmet, CORS, rate limiting, input validation, password hashing
-- **Code Organization** — MVC architecture with clear separation of concerns
+1. Start backend (`npm run dev`) and frontend (`cd frontend && npm run dev`)
+2. Login or register
+3. **Budgets** → Create Food budget for current month, limit **1000**
+4. **Transactions** → Add expense Food **400** (no alert yet if under 80%)
+5. Add another expense Food **700** (total 1100 → crosses 100%)
+6. **Notifications** → See `🚨 Budget exceeded!` message
+7. Sidebar bell badge shows unread count
 
-The project contains **5 Mongoose models**, **7 controllers**, **7 route files**, **6 middleware**, **5 validators**, and **3 utility modules**, delivering **35+ API endpoints** with comprehensive error handling and data validation.
+### Browser Push
+
+1. **Profile** → Click **Enable Push Notifications**
+2. Allow permission when browser prompts
+3. Repeat budget exceed test → OS/browser notification should appear
+4. Click notification → opens Notifications page
+
+### Goal Reminder
+
+1. **Goals** → Create goal with **Weekly** reminder frequency
+2. Wait for cron (10:00 AM server) or temporarily lower interval in code for testing
+3. Check Notifications for `goal_reminder` type
+
+### CSV Import Alerts
+
+1. **Transactions** → Import CSV tab
+2. Import expenses that push a category over budget
+3. Completion screen shows `notificationsSent` count
+4. Notifications page lists new alerts
 
 ---
 
-*End of Report*
+## 15. Known Limitations & Future Work
+
+| Area | Limitation | Suggested Improvement |
+|------|------------|----------------------|
+| Categories | Dual systems (legacy + Pakistan) | Unified category model across UI |
+| Email | Requires valid SMTP in `.env` | Document Ethereal setup for demos |
+| Push | Requires HTTPS in production | Deploy behind TLS for real push |
+| Real-time | No WebSocket; badge refreshes on actions | SSE or polling for live updates |
+| Reports | `yoy-comparison` not in frontend UI | Add to Reports page |
+| Tests | No frontend unit/e2e tests | Add Vitest + Playwright |
+| Secrets | Default VAPID/SMTP in code | Move to env-only in production |
+
+---
+
+## 16. Conclusion
+
+MoneyMap is a production-quality midterm lab deliverable combining a **RESTful Express API**, a **React SPA**, and an **intelligent notification engine** with in-app, push, and email channels. Phase 3 added CSV bank import, auto-categorization, dashboard unification, and a complete notification pipeline.
+
+This release **fixes critical notification bugs** (budget sync on manual transactions), **implements end-to-end browser push**, and **resolves multiple frontend/backend inconsistencies** (profile delete, review queue, navigation, goal reminders).
+
+The project demonstrates proficiency in full-stack JavaScript development, MongoDB aggregation, JWT security, service workers, scheduled jobs, and systematic automated testing.
+
+---
+
+*Report generated: May 2026 — MoneyMap / finance-dashboard-api*

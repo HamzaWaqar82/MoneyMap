@@ -13,7 +13,7 @@ export default function Goals() {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState({ open: false, mode: 'create', data: null });
   const [contribModal, setContribModal] = useState({ open: false, goal: null });
-  const [form, setForm] = useState({ title: '', targetAmount: '', currentAmount: '0', deadline: '' });
+  const [form, setForm] = useState({ title: '', targetAmount: '', currentAmount: '0', deadline: '', reminderFrequency: 'none' });
   const [contribAmount, setContribAmount] = useState('');
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -31,17 +31,17 @@ export default function Goals() {
 
   useEffect(() => { fetchGoals(); }, [filter]);
 
-  const openCreate = () => { setForm({ title:'', targetAmount:'', currentAmount:'0', deadline:'' }); setErrors({}); setModal({ open:true, mode:'create', data:null }); };
-  const openEdit = (g) => { setForm({ title:g.title, targetAmount:g.targetAmount, deadline:g.deadline?.split('T')[0]||'', status:g.status }); setErrors({}); setModal({ open:true, mode:'edit', data:g }); };
+  const openCreate = () => { setForm({ title:'', targetAmount:'', currentAmount:'0', deadline:'', reminderFrequency:'none' }); setErrors({}); setModal({ open:true, mode:'create', data:null }); };
+  const openEdit = (g) => { setForm({ title:g.title, targetAmount:g.targetAmount, deadline:g.deadline?.split('T')[0]||'', status:g.status, reminderFrequency:g.reminderFrequency||'none' }); setErrors({}); setModal({ open:true, mode:'edit', data:g }); };
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setSaving(true); setErrors({});
     try {
       if (modal.mode === 'create') {
-        await api.post('/goals', { title:form.title, targetAmount:parseFloat(form.targetAmount), currentAmount:parseFloat(form.currentAmount||0), deadline:form.deadline });
+        await api.post('/goals', { title:form.title, targetAmount:parseFloat(form.targetAmount), currentAmount:parseFloat(form.currentAmount||0), deadline:form.deadline, reminderFrequency:form.reminderFrequency });
         toast.success('Goal created!');
       } else {
-        const body = { title:form.title, targetAmount:parseFloat(form.targetAmount), deadline:form.deadline };
+        const body = { title:form.title, targetAmount:parseFloat(form.targetAmount), deadline:form.deadline, reminderFrequency:form.reminderFrequency };
         if (form.status) body.status = form.status;
         await api.put(`/goals/${modal.data.id}`, body);
         toast.success('Goal updated!');
@@ -130,6 +130,15 @@ export default function Goals() {
           <div className="form-group"><label>Target Amount ({currency})</label><input type="number" step="0.01" min="0.01" className="form-control" value={form.targetAmount} onChange={e => setForm({...form,targetAmount:e.target.value})} required /></div>
           {modal.mode === 'create' && <div className="form-group"><label>Starting Amount ({currency})</label><input type="number" step="0.01" min="0" className="form-control" value={form.currentAmount} onChange={e => setForm({...form,currentAmount:e.target.value})} /></div>}
           <div className="form-group"><label>Deadline</label><input type="date" className="form-control" value={form.deadline} onChange={e => setForm({...form,deadline:e.target.value})} required /></div>
+          <div className="form-group">
+            <label>Reminder Frequency</label>
+            <select className="form-control" value={form.reminderFrequency} onChange={e => setForm({...form,reminderFrequency:e.target.value})}>
+              <option value="none">No reminders</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
           {modal.mode === 'edit' && <div className="form-group"><label>Status</label><select className="form-control" value={form.status||''} onChange={e => setForm({...form,status:e.target.value})}><option value="active">Active</option><option value="completed">Completed</option><option value="abandoned">Abandoned</option></select></div>}
         </form>
       </Modal>

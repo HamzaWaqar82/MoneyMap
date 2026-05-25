@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 import Modal from '../components/Modal';
 import CSVImportTab from '../components/CSVImportTab';
 import { Plus, Edit3, Trash2, ChevronLeft, ChevronRight, UploadCloud, Edit } from 'lucide-react';
@@ -11,6 +12,7 @@ const EXPENSE_CATS = ['Food','Transport','Shopping','Utilities','Entertainment',
 
 export default function Transactions() {
   const { user } = useAuth();
+  const { refreshUnread } = useNotifications();
   const currency = user?.currencyPreference || 'PKR';
   const [activeTab, setActiveTab] = useState('manual');
   const [transactions, setTransactions] = useState([]);
@@ -83,6 +85,7 @@ export default function Transactions() {
       }
       setModal({ open: false, mode: 'create', data: null });
       fetchTransactions(pagination.page);
+      refreshUnread();
     } catch (err) {
       if (err.details) {
         setErrors(err.details);
@@ -126,7 +129,7 @@ export default function Transactions() {
       </div>
 
       {activeTab === 'import' ? (
-        <CSVImportTab />
+        <CSVImportTab onImportComplete={refreshUnread} />
       ) : (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>

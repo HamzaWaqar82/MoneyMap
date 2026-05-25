@@ -360,6 +360,13 @@ const deleteTransaction = async (req, res, next) => {
 			);
 		}
 
+		try {
+			const month = getMonthKey(transaction.transactionDate);
+			await syncBudgets(userId, [month]);
+		} catch (budgetErr) {
+			console.error("Budget sync on delete error:", budgetErr);
+		}
+
 		sendSuccess(res, null, "Transaction deleted successfully", 200);
 	} catch (error) {
 		next(error);

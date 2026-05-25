@@ -6,6 +6,9 @@ const {
 	markAsRead,
 	markAllAsRead,
 	deleteNotification,
+	getVapidPublicKey,
+	subscribePush,
+	unsubscribePush,
 } = require("../controllers/notificationsController");
 
 const router = express.Router();
@@ -26,6 +29,27 @@ router.get("/", authenticate, getAllNotifications);
  * @access  Private (Requires JWT token)
  */
 router.get("/unread", authenticate, getUnreadCount);
+
+/**
+ * @route   GET /api/notifications/push/vapid-key
+ * @desc    Get VAPID public key for Web Push subscription
+ * @access  Private
+ */
+router.get("/push/vapid-key", authenticate, getVapidPublicKey);
+
+/**
+ * @route   PUT /api/notifications/push/subscribe
+ * @desc    Save browser push subscription
+ * @access  Private
+ */
+router.put("/push/subscribe", authenticate, subscribePush);
+
+/**
+ * @route   DELETE /api/notifications/push/subscribe
+ * @desc    Remove browser push subscription
+ * @access  Private
+ */
+router.delete("/push/subscribe", authenticate, unsubscribePush);
 
 /**
  * @route   PUT /api/notifications/read-all

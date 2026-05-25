@@ -49,7 +49,7 @@ export default function Dashboard() {
 
   const handleCorrectCategory = async (txnId, newCategory) => {
     try {
-      await api.put(`/expense-tracker/review/${txnId}`, { categoryName: newCategory });
+      await api.put(`/expense-tracker/review/${txnId}`, { categoryId: newCategory });
       toast.success('Category corrected');
       setReviewQueue(prev => prev.filter(t => (t._id || t.id) !== txnId));
     } catch (err) { toast.error(err.message); }
@@ -200,7 +200,7 @@ export default function Dashboard() {
                         <select className="form-control" style={{ padding: '4px 8px', fontSize: 13, minWidth: 130 }}
                           defaultValue="" onChange={e => { if (e.target.value) handleCorrectCategory(txnId, e.target.value); }}>
                           <option value="">Correct To...</option>
-                          {allCategories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
+                          {allCategories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                         </select>
                       </div>
                     );
