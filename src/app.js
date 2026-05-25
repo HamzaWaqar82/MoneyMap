@@ -17,13 +17,27 @@ const goalRoutes = require("./routes/goals.routes");
 const reportRoutes = require("./routes/reports.routes");
 const notificationRoutes = require("./routes/notifications.routes");
 
+// ── Expense Tracker Module Routes ──
+const accountRoutes = require("./routes/accounts.routes");
+const categoryRoutes = require("./routes/categories.routes");
+const expenseTrackerRoutes = require("./routes/expenseTracker.routes");
+const { seedCategories } = require("./seeds/categorySeeder");
+
 const app = express();
 
-// Initialize MongoDB connection
+// Initialize MongoDB connection + seed categories
 console.log("[APP] About to call connectDB()...");
 (async () => {
 	await connectDB();
 	console.log("[APP] ✅ DB connection established");
+
+	// Seed default categories (idempotent — safe to run on every startup)
+	try {
+		await seedCategories();
+		console.log("[APP] ✅ Categories seeded");
+	} catch (seedError) {
+		console.error("[APP] ⚠️ Category seeding failed:", seedError.message);
+	}
 })().catch(e => console.log("[APP] ❌ DB Promise rejected:", e.message));
 
 // ============================================
@@ -95,6 +109,11 @@ app.use("/api/goals", goalRoutes);
 app.use("/api/reports", reportRoutes);
 
 app.use("/api/notifications", notificationRoutes);
+
+// ── Expense Tracker Module Routes ──
+app.use("/api/accounts", accountRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/expense-tracker", expenseTrackerRoutes);
 
 // 404 handler
 app.use((req, res) => {
