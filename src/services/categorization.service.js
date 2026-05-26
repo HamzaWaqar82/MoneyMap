@@ -142,9 +142,12 @@ const loadCategories = async () => {
 		return categoryCache;
 	}
 
-	categoryCache = await Category.find({}).lean();
-	categoryCacheTimestamp = now;
-	return categoryCache;
+	const fresh = await Category.find({}).lean();
+	if (fresh.length > 0) {
+		categoryCache = fresh;
+		categoryCacheTimestamp = now;
+	}
+	return fresh;
 };
 
 /**

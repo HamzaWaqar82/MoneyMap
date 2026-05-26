@@ -27,28 +27,6 @@ const { startAccountDeletionCron } = require("./services/accountDeletionCron.ser
 
 const app = express();
 
-// Initialize MongoDB connection + seed categories
-console.log("[APP] About to call connectDB()...");
-(async () => {
-	await connectDB();
-	console.log("[APP] ✅ DB connection established");
-
-	// Seed default categories (idempotent — safe to run on every startup)
-	try {
-		await seedCategories();
-		console.log("[APP] ✅ Categories seeded");
-	} catch (seedError) {
-		console.error("[APP] ⚠️ Category seeding failed:", seedError.message);
-	}
-
-	// Start Cron jobs (skip in test environment)
-	if (process.env.NODE_ENV !== "test") {
-		startNotificationCron();
-		startAccountDeletionCron();
-		console.log("[APP] ✅ Background cron jobs started");
-	}
-})().catch(e => console.log("[APP] ❌ DB Promise rejected:", e.message));
-
 // ============================================
 // GLOBAL MIDDLEWARE
 // ============================================
@@ -138,10 +116,9 @@ app.use(errorHandler);
 // SERVER STARTUP
 // ============================================
 
-const PORT = config.port;
-
 // Only bind the port when running directly (not when imported by tests)
-if (require.main === module) {
+const startServer = () => {
+	const PORT = config.port;
 	app.listen(PORT, () => {
 		console.log(`
 ╔═══════════════════════════════════════════════════╗
@@ -153,6 +130,25 @@ if (require.main === module) {
 ╚═══════════════════════════════════════════════════╝
     `);
 	});
+};
+
+if (require.main === module) {
+	// Chain listen after DB connect + seeding to avoid startup race conditions
+	const init = async () => {
+		try {
+			await connectDB();
+			await seedCategories();
+			if (process.env.NODE_ENV !== "test") {
+				startNotificationCron();
+				startAccountDeletionCron();
+			}
+			startServer();
+		} catch (err) {
+			console.error("[APP] Failed to initialize:", err.message);
+			process.exit(1);
+		}
+	};
+	init();
 }
 
 module.exports = app;
