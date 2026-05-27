@@ -18,8 +18,12 @@ export default function Login() {
     setErrors({});
     setLoading(true);
     try {
-      await login(form.email, form.password);
-      toast.success('Welcome back!');
+      const res = await login(form.email, form.password);
+      if (res.data?.accountRestored) {
+        toast.success('Welcome back! Your scheduled account deletion has been cancelled.');
+      } else {
+        toast.success('Welcome back!');
+      }
     } catch (err) {
       if (err.details && Object.keys(err.details).length) setErrors(err.details);
       else toast.error(err.message || 'Login failed');

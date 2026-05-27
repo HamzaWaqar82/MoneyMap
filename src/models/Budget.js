@@ -43,6 +43,13 @@ const budgetSchema = new mongoose.Schema(
 			type: Number,
 			default: 0,
 		},
+		// ── Expense Tracker Extension ──
+		// null = budget applies to all accounts (backward-compatible)
+		accountId: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "Account",
+			default: null,
+		},
 		month: {
 			type: String,
 			required: [true, "Month is required (format: YYYY-MM)"],

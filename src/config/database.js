@@ -14,8 +14,11 @@ const connectDB = async () => {
 		console.error("[DB] Error name:", error.name);
 		console.error("[DB] Error code:", error.code);
 		console.error("[DB] Error message:", error.message);
-		console.error("[DB] Full error:", JSON.stringify(error, null, 2));
-		process.exit(1);
+		// Don't kill the process in test/dev — let the caller handle it
+		if (process.env.NODE_ENV === "production") {
+			process.exit(1);
+		}
+		throw error;
 	}
 };
 

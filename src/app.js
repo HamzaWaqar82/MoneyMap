@@ -17,14 +17,15 @@ const goalRoutes = require("./routes/goals.routes");
 const reportRoutes = require("./routes/reports.routes");
 const notificationRoutes = require("./routes/notifications.routes");
 
-const app = express();
+// ── Expense Tracker Module Routes ──
+const accountRoutes = require("./routes/accounts.routes");
+const categoryRoutes = require("./routes/categories.routes");
+const expenseTrackerRoutes = require("./routes/expenseTracker.routes");
+const { seedCategories } = require("./seeds/categorySeeder");
+const { startNotificationCron } = require("./services/notificationCron.service");
+const { startAccountDeletionCron } = require("./services/accountDeletionCron.service");
 
-// Initialize MongoDB connection
-console.log("[APP] About to call connectDB()...");
-(async () => {
-	await connectDB();
-	console.log("[APP] ✅ DB connection established");
-})().catch(e => console.log("[APP] ❌ DB Promise rejected:", e.message));
+const app = express();
 
 // ============================================
 // GLOBAL MIDDLEWARE
@@ -96,6 +97,11 @@ app.use("/api/reports", reportRoutes);
 
 app.use("/api/notifications", notificationRoutes);
 
+// ── Expense Tracker Module Routes ──
+app.use("/api/accounts", accountRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/expense-tracker", expenseTrackerRoutes);
+
 // 404 handler
 app.use((req, res) => {
 	sendError(res, `Route ${req.originalUrl} not found`, "NOT_FOUND", 404);
@@ -110,10 +116,11 @@ app.use(errorHandler);
 // SERVER STARTUP
 // ============================================
 
-const PORT = config.port;
-
-app.listen(PORT, () => {
-	console.log(`
+// Only bind the port when running directly (not when imported by tests)
+const startServer = () => {
+	const PORT = config.port;
+	app.listen(PORT, () => {
+		console.log(`
 ╔═══════════════════════════════════════════════════╗
 ║   💰 Finance Dashboard API Running 💰            ║
 ╠═══════════════════════════════════════════════════╣
@@ -121,7 +128,27 @@ app.listen(PORT, () => {
 ║ Environment: ${config.nodeEnv}                     ║
 ║ Database: ${config.mongoUri}               ║
 ╚═══════════════════════════════════════════════════╝
-  `);
-});
+    `);
+	});
+};
+
+if (require.main === module) {
+	// Chain listen after DB connect + seeding to avoid startup race conditions
+	const init = async () => {
+		try {
+			await connectDB();
+			await seedCategories();
+			if (process.env.NODE_ENV !== "test") {
+				startNotificationCron();
+				startAccountDeletionCron();
+			}
+			startServer();
+		} catch (err) {
+			console.error("[APP] Failed to initialize:", err.message);
+			process.exit(1);
+		}
+	};
+	init();
+}
 
 module.exports = app;

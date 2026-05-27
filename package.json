@@ -6,7 +6,12 @@
 	"scripts": {
 		"start": "node src/app.js",
 		"dev": "nodemon src/app.js",
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"test": "jest --forceExit --detectOpenHandles",
+		"test:unit": "jest --testPathPatterns=__tests__/unit --forceExit",
+		"test:integration": "jest --testPathPatterns=__tests__/integration --forceExit --detectOpenHandles",
+		"test:regression": "jest --testPathPatterns=__tests__/regression --forceExit --detectOpenHandles",
+		"test:uat": "jest --testPathPatterns=__tests__/uat --forceExit --detectOpenHandles",
+		"test:coverage": "jest --coverage --forceExit --detectOpenHandles"
 	},
 	"keywords": [
 		"finance",
@@ -20,15 +25,22 @@
 	"dependencies": {
 		"bcryptjs": "^3.0.3",
 		"cors": "^2.8.6",
+		"csv-parse": "^6.2.1",
 		"dotenv": "^17.4.2",
 		"express": "^5.2.1",
 		"express-validator": "^7.3.2",
 		"helmet": "^8.1.0",
 		"joi": "^18.1.2",
 		"jsonwebtoken": "^9.0.3",
-		"mongoose": "^9.5.0"
+		"mongoose": "^9.5.0",
+		"multer": "^2.1.1",
+		"node-cron": "^4.2.1",
+		"nodemailer": "^8.0.8",
+		"web-push": "^3.6.7"
 	},
 	"devDependencies": {
-		"nodemon": "^3.1.14"
+		"jest": "^30.4.2",
+		"nodemon": "^3.1.14",
+		"supertest": "^7.2.2"
 	}
 }

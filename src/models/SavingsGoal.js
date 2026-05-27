@@ -39,6 +39,15 @@ const savingsGoalSchema = new mongoose.Schema(
 			min: 0,
 			max: 100,
 		},
+		reminderFrequency: {
+			type: String,
+			enum: ["daily", "weekly", "monthly", "none"],
+			default: "none",
+		},
+		lastRemindedAt: {
+			type: Date,
+			default: null,
+		},
 	},
 	{ timestamps: true },
 );

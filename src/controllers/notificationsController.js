@@ -1,5 +1,7 @@
 const Notification = require("../models/Notification");
+const User = require("../models/User");
 const { sendSuccess, sendError } = require("../utils/responseFormatter");
+const { vapidPublicKey } = require("../services/pushNotification.service");
 
 // Get All Notifications (with optional type filter and pagination)
 const getAllNotifications = async (req, res, next) => {
@@ -212,6 +214,97 @@ const createNotification = async (userId, type, message) => {
 	}
 };
 
+// Get VAPID public key for browser push subscription
+const getVapidPublicKey = async (req, res, next) => {
+	try {
+		sendSuccess(res, { publicKey: vapidPublicKey }, "VAPID public key retrieved", 200);
+	} catch (error) {
+		next(error);
+	}
+};
+
+// Save browser push subscription for current user
+const subscribePush = async (req, res, next) => {
+	try {
+		const userId = req.user.id;
+		const { subscription } = req.body;
+
+		if (!subscription || !subscription.endpoint) {
+			return sendError(res, "Valid push subscription is required", "INVALID_SUBSCRIPTION", 400);
+		}
+
+		const user = await User.findById(userId);
+		if (!user) {
+			return sendError(res, "User not found", "USER_NOT_FOUND", 404);
+		}
+
+		user.pushSubscription = subscription;
+		await user.save();
+
+		sendSuccess(res, { subscribed: true }, "Push notifications enabled", 200);
+	} catch (error) {
+		next(error);
+	}
+};
+
+// Send a test push notification to the current user
+const testPush = async (req, res, next) => {
+	try {
+		const userId = req.user.id;
+		const user = await User.findById(userId);
+
+		if (!user) {
+			return sendError(res, "User not found", "USER_NOT_FOUND", 404);
+		}
+
+		if (!user.pushSubscription) {
+			return sendError(
+				res,
+				"Enable push notifications in Profile first",
+				"NO_PUSH_SUBSCRIPTION",
+				400,
+			);
+		}
+
+		const { dispatchNotification } = require("../services/pushNotification.service");
+		const result = await dispatchNotification(
+			user,
+			"budget_alert",
+			"Test alert: push notifications are working!",
+			"high",
+		);
+
+		sendSuccess(
+			res,
+			{ pushSent: result.pushSent, message: result.notif.message },
+			result.pushSent
+				? "Test push notification sent"
+				: "In-app notification created but push delivery failed",
+			200,
+		);
+	} catch (error) {
+		next(error);
+	}
+};
+
+// Remove browser push subscription
+const unsubscribePush = async (req, res, next) => {
+	try {
+		const userId = req.user.id;
+		const user = await User.findById(userId);
+		if (!user) {
+			return sendError(res, "User not found", "USER_NOT_FOUND", 404);
+		}
+
+		user.pushSubscription = null;
+		await user.save();
+
+		sendSuccess(res, { subscribed: false }, "Push notifications disabled", 200);
+	} catch (error) {
+		next(error);
+	}
+};
+
 module.exports = {
 	getAllNotifications,
 	getUnreadCount,
@@ -219,4 +312,8 @@ module.exports = {
 	markAllAsRead,
 	deleteNotification,
 	createNotification,
+	getVapidPublicKey,
+	subscribePush,
+	unsubscribePush,
+	testPush,
 };

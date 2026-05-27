@@ -17,6 +17,12 @@ const createGoalSchema = Joi.object({
 		"date.greater": "Deadline must be a future date",
 		"any.required": "Deadline is required",
 	}),
+	reminderFrequency: Joi.string()
+		.valid("daily", "weekly", "monthly", "none")
+		.default("none")
+		.messages({
+			"any.only": 'Reminder frequency must be "daily", "weekly", "monthly", or "none"',
+		}),
 });
 
 const updateGoalSchema = Joi.object({
@@ -35,6 +41,12 @@ const updateGoalSchema = Joi.object({
 		.optional()
 		.messages({
 			"any.only": 'Status must be "active", "completed", or "abandoned"',
+		}),
+	reminderFrequency: Joi.string()
+		.valid("daily", "weekly", "monthly", "none")
+		.optional()
+		.messages({
+			"any.only": 'Reminder frequency must be "daily", "weekly", "monthly", or "none"',
 		}),
 });
 

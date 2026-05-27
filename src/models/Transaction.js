@@ -57,8 +57,41 @@ const transactionSchema = new mongoose.Schema(
 		},
 		paymentMethod: {
 			type: String,
-			enum: ["cash", "card", "bank_transfer"],
+			enum: ["cash", "card", "bank_transfer", "wallet"],
 			default: "cash",
+		},
+		// ── Expense Tracker Module Extensions ──
+		// All fields below are optional to maintain backward compatibility
+		// with existing transactions created through the manual CRUD API.
+		accountId: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "Account",
+			default: null,
+		},
+		source: {
+			type: String,
+			enum: ["manual", "csv", "api"],
+			default: "manual",
+		},
+		rawRef: {
+			type: String,
+			default: null,
+			maxlength: [100, "Bank reference cannot exceed 100 characters"],
+		},
+		confidence: {
+			type: Number,
+			min: 0,
+			max: 1,
+			default: null,
+		},
+		needsReview: {
+			type: Boolean,
+			default: false,
+		},
+		amountPaisas: {
+			type: Number,
+			default: null,
+			min: [0, "Amount in paisas cannot be negative"],
 		},
 		createdAt: {
 			type: Date,
@@ -76,5 +109,10 @@ const transactionSchema = new mongoose.Schema(
 transactionSchema.index({ userId: 1, transactionDate: -1 });
 transactionSchema.index({ userId: 1, category: 1 });
 transactionSchema.index({ userId: 1, type: 1 });
+
+// Expense tracker module indexes
+transactionSchema.index({ userId: 1, accountId: 1, transactionDate: -1 });
+transactionSchema.index({ userId: 1, source: 1 });
+transactionSchema.index({ userId: 1, needsReview: 1 });
 
 module.exports = mongoose.model("Transaction", transactionSchema);

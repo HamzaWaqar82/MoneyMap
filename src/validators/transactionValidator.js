@@ -43,12 +43,16 @@ const createTransactionSchema = Joi.object({
 		"any.required": "Transaction date is required",
 	}),
 	paymentMethod: Joi.string()
-		.valid("cash", "card", "bank_transfer")
+		.valid("cash", "card", "bank_transfer", "wallet")
 		.default("cash")
 		.messages({
 			"any.only":
-				'Payment method must be "cash", "card", or "bank_transfer"',
+				'Payment method must be "cash", "card", "bank_transfer", or "wallet"',
 		}),
+	accountId: Joi.string().hex().length(24).optional().allow(null).messages({
+		"string.hex": "Invalid account ID format",
+		"string.length": "Invalid account ID format",
+	}),
 });
 
 const updateTransactionSchema = Joi.object({
@@ -71,12 +75,16 @@ const updateTransactionSchema = Joi.object({
 		"date.max": "Transaction date cannot be in the future",
 	}),
 	paymentMethod: Joi.string()
-		.valid("cash", "card", "bank_transfer")
+		.valid("cash", "card", "bank_transfer", "wallet")
 		.optional()
 		.messages({
 			"any.only":
-				'Payment method must be "cash", "card", or "bank_transfer"',
+				'Payment method must be "cash", "card", "bank_transfer", or "wallet"',
 		}),
+	accountId: Joi.string().hex().length(24).optional().allow(null).messages({
+		"string.hex": "Invalid account ID format",
+		"string.length": "Invalid account ID format",
+	}),
 });
 
 const validateCreateTransaction = (data) =>

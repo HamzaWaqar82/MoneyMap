@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api/client';
+import { useNotifications } from '../context/NotificationContext';
 import { Bell, CheckCheck, Trash2, AlertTriangle, Target, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -7,6 +8,7 @@ const typeIcons = { budget_alert: AlertTriangle, goal_reminder: Target, transact
 const typeClasses = { budget_alert: 'budget', goal_reminder: 'goal', transaction_confirmation: 'transaction' };
 
 export default function Notifications() {
+  const { refreshUnread } = useNotifications();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
@@ -24,13 +26,13 @@ export default function Notifications() {
   useEffect(() => { fetch_(); }, []);
 
   const markRead = async (id) => {
-    try { await api.put(`/notifications/${id}/read`); fetch_(pagination.page); } catch {}
+    try { await api.put(`/notifications/${id}/read`); await fetch_(pagination.page); refreshUnread(); } catch {}
   };
   const markAllRead = async () => {
-    try { await api.put('/notifications/read-all'); toast.success('All marked as read'); fetch_(pagination.page); } catch {}
+    try { await api.put('/notifications/read-all'); toast.success('All marked as read'); await fetch_(pagination.page); refreshUnread(); } catch {}
   };
   const deleteNotif = async (id) => {
-    try { await api.delete(`/notifications/${id}`); toast.success('Deleted'); fetch_(pagination.page); } catch {}
+    try { await api.delete(`/notifications/${id}`); toast.success('Deleted'); await fetch_(pagination.page); refreshUnread(); } catch {}
   };
 
   if (loading) return <div className="loading-page"><div className="spinner"></div></div>;

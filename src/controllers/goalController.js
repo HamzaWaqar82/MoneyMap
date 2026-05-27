@@ -10,7 +10,7 @@ const { sendSuccess, sendError } = require("../utils/responseFormatter");
 const createGoal = async (req, res, next) => {
 	try {
 		const userId = req.user.id;
-		const { title, targetAmount, currentAmount, deadline } = req.body;
+		const { title, targetAmount, currentAmount, deadline, reminderFrequency } = req.body;
 
 		// Validate input
 		const { error, value } = validateCreateGoal({
@@ -18,6 +18,7 @@ const createGoal = async (req, res, next) => {
 			targetAmount,
 			currentAmount,
 			deadline,
+			reminderFrequency,
 		});
 
 		if (error) {
@@ -52,6 +53,7 @@ const createGoal = async (req, res, next) => {
 			targetAmount: value.targetAmount,
 			currentAmount: value.currentAmount,
 			deadline: value.deadline,
+			reminderFrequency: value.reminderFrequency,
 		});
 
 		await goal.save();
@@ -67,6 +69,7 @@ const createGoal = async (req, res, next) => {
 				deadline: goal.deadline,
 				status: goal.status,
 				progressPercentage: goal.progressPercentage,
+				reminderFrequency: goal.reminderFrequency,
 				createdAt: goal.createdAt,
 			},
 			"Savings goal created successfully",
@@ -109,6 +112,7 @@ const getAllGoals = async (req, res, next) => {
 			deadline: goal.deadline,
 			status: goal.status,
 			progressPercentage: goal.progressPercentage,
+			reminderFrequency: goal.reminderFrequency,
 			daysRemaining: Math.max(
 				0,
 				Math.ceil(
@@ -175,7 +179,7 @@ const updateGoal = async (req, res, next) => {
 	try {
 		const userId = req.user.id;
 		const { id } = req.params;
-		const { title, targetAmount, deadline, status } = req.body;
+		const { title, targetAmount, deadline, status, reminderFrequency } = req.body;
 
 		// Validate input
 		const { error } = validateUpdateGoal({
@@ -183,6 +187,7 @@ const updateGoal = async (req, res, next) => {
 			targetAmount,
 			deadline,
 			status,
+			reminderFrequency,
 		});
 
 		if (error) {
@@ -225,6 +230,7 @@ const updateGoal = async (req, res, next) => {
 		}
 		if (deadline !== undefined) goal.deadline = deadline;
 		if (status !== undefined) goal.status = status;
+		if (reminderFrequency !== undefined) goal.reminderFrequency = reminderFrequency;
 
 		await goal.save();
 
@@ -239,6 +245,7 @@ const updateGoal = async (req, res, next) => {
 				deadline: goal.deadline,
 				status: goal.status,
 				progressPercentage: goal.progressPercentage,
+				reminderFrequency: goal.reminderFrequency,
 				updatedAt: goal.updatedAt,
 			},
 			"Savings goal updated successfully",
